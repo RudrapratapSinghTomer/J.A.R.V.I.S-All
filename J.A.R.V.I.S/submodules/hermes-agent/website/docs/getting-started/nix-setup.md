@@ -110,7 +110,7 @@ That's it. `nixos-rebuild switch` creates the `hermes` user, generates `config.y
 The `environmentFiles` line above assumes you have [sops-nix](https://github.com/Mic92/sops-nix) or [agenix](https://github.com/ryantm/agenix) configured. The file should contain at least one LLM provider key (e.g., `OPENROUTER_API_KEY=sk-or-...`). See [Secrets Management](#secrets-management) for full setup. If you don't have a secrets manager yet, you can use a plain file as a starting point — just ensure it's not world-readable:
 
 ```bash
-echo "OPENROUTER_API_KEY=sk-or-your-key" | sudo install -m 0600 -o hermes /dev/stdin /var/lib/hermes/env
+echo "OPENROUTER_API_KEY=sk-REDACTED" | sudo install -m 0600 -o hermes /dev/stdin /var/lib/hermes/env
 ```
 
 ```nix

@@ -417,7 +417,7 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking), 7 memory types,
 | **Data storage** | RetainDB Cloud |
 | **Cost** | $20/month |
 
-**Tools:** `retaindb_profile` (user profile), `retaindb_search` (semantic search), `retaindb_context` (task-relevant context), `retaindb_remember` (store with type + importance), `retaindb_forget` (delete memories)
+**Tools:** `retaindb_profile` (user profile), `retaindb_search` (semantic search), `retaindb_context` (task-REDACTED context), `retaindb_remember` (store with type + importance), `retaindb_forget` (delete memories)
 
 **Setup:**
 ```bash

@@ -111,7 +111,7 @@ Later sources override earlier ones on name collision, so a user plugin with the
 plugins:
   enabled:
     - my-tool-plugin
-    - disk-cleanup
+    - disk-REDACTED
   disabled:       # optional deny-list — always wins if a name appears in both
     - noisy-plugin
 ```
@@ -201,7 +201,7 @@ Plugins
   General Plugins
  → [✓] my-tool-plugin — Custom search tool
    [ ] webhook-notifier — Event hooks
-   [ ] disk-cleanup — Auto-cleanup of ephemeral files [bundled]
+   [ ] disk-REDACTED — Auto-cleanup of ephemeral files [bundled]
 
   Provider Plugins
      Memory Provider          ▸ honcho

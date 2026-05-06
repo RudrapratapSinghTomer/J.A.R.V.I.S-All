@@ -88,7 +88,7 @@ Every plan MUST start with:
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
+> **For Hermes:** Use subagent-driven-development skill to implement this plan task-REDACTED.
 
 **Goal:** [One sentence describing what this builds]
 

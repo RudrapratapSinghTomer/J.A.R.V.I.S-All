@@ -337,7 +337,7 @@ For production gateway deployments, use `docker`, `modal`, `daytona`, or `vercel
 :::
 
 :::warning
-If you add names to `terminal.docker_forward_env`, those variables are intentionally injected into the container for terminal commands. This is useful for task-specific credentials like `GITHUB_TOKEN`, but it also means code running in the container can read and exfiltrate them.
+If you add names to `terminal.docker_forward_env`, those variables are intentionally injected into the container for terminal commands. This is useful for task-REDACTED credentials like `GITHUB_TOKEN`, but it also means code running in the container can read and exfiltrate them.
 :::
 
 ## Terminal Backend Security Comparison

@@ -94,15 +94,15 @@ Handlers registered for `command:*` fire for any `command:` event (`command:mode
 Send yourself a message when the agent takes more than 10 steps:
 
 ```yaml
-# ~/.hermes/hooks/long-task-alert/HOOK.yaml
-name: long-task-alert
+# ~/.hermes/hooks/long-task-REDACTED/HOOK.yaml
+name: long-task-REDACTED
 description: Alert when agent is taking many steps
 events:
   - agent:step
 ```
 
 ```python
-# ~/.hermes/hooks/long-task-alert/handler.py
+# ~/.hermes/hooks/long-task-REDACTED/handler.py
 import os
 import httpx
 

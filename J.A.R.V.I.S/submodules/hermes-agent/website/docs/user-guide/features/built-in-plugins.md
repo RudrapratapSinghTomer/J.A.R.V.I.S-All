@@ -2,7 +2,7 @@
 sidebar_position: 12
 sidebar_label: "Built-in Plugins"
 title: "Built-in Plugins"
-description: "Plugins shipped with Hermes Agent that run automatically via lifecycle hooks — disk-cleanup and friends"
+description: "Plugins shipped with Hermes Agent that run automatically via lifecycle hooks — disk-REDACTED and friends"
 ---
 
 # Built-in Plugins
@@ -20,7 +20,7 @@ The `PluginManager` scans four sources, in order:
 3. **Project** — `./.hermes/plugins/<name>/` (requires `HERMES_ENABLE_PROJECT_PLUGINS=1`)
 4. **Pip entry points** — `hermes_agent.plugins`
 
-On name collision, later sources win — a user plugin named `disk-cleanup` would replace the bundled one.
+On name collision, later sources win — a user plugin named `disk-REDACTED` would replace the bundled one.
 
 `plugins/memory/` and `plugins/context_engine/` are deliberately excluded from bundled scanning. Those directories use their own discovery paths because memory providers and context engines are single-select providers configured through `hermes memory setup` / `context.engine` in config.
 
@@ -29,7 +29,7 @@ On name collision, later sources win — a user plugin named `disk-cleanup` woul
 Bundled plugins ship disabled. Discovery finds them (they appear in `hermes plugins list` and the interactive `hermes plugins` UI), but none load until you explicitly enable them:
 
 ```bash
-hermes plugins enable disk-cleanup
+hermes plugins enable disk-REDACTED
 ```
 
 Or via `~/.hermes/config.yaml`:
@@ -37,7 +37,7 @@ Or via `~/.hermes/config.yaml`:
 ```yaml
 plugins:
   enabled:
-    - disk-cleanup
+    - disk-REDACTED
 ```
 
 This is the same mechanism user-installed plugins use. Bundled plugins are never auto-enabled — not on fresh install, not for existing users upgrading to a newer Hermes. You always opt in explicitly.
@@ -45,7 +45,7 @@ This is the same mechanism user-installed plugins use. Bundled plugins are never
 To turn a bundled plugin off again:
 
 ```bash
-hermes plugins disable disk-cleanup
+hermes plugins disable disk-REDACTED
 # or: remove it from plugins.enabled in config.yaml
 ```
 
@@ -55,7 +55,7 @@ The repo ships these bundled plugins under `plugins/`. All are opt-in — enable
 
 | Plugin | Kind | Purpose |
 |---|---|---|
-| `disk-cleanup` | hooks + slash command | Auto-track ephemeral files and clean them on session end |
+| `disk-REDACTED` | hooks + slash command | Auto-track ephemeral files and clean them on session end |
 | `observability/langfuse` | hooks | Trace turns / LLM calls / tools to [Langfuse](https://langfuse.com) |
 | `spotify` | backend (7 tools) | Native Spotify playback, queue, search, playlists, albums, library |
 | `google_meet` | standalone | Join Meet calls, live-caption transcription, optional realtime duplex audio |
@@ -68,7 +68,7 @@ The repo ships these bundled plugins under `plugins/`. All are opt-in — enable
 
 Memory providers (`plugins/memory/*`) and context engines (`plugins/context_engine/*`) are listed separately on [Memory Providers](./memory-providers.md) — they're managed through `hermes memory` and `hermes plugins` respectively. The full per-plugin detail for the two long-running hooks-based plugins follows.
 
-### disk-cleanup
+### disk-REDACTED
 
 Auto-tracks and removes ephemeral files created during sessions — test scripts, temp outputs, cron logs, stale chrome profiles — without requiring the agent to remember to call a tool.
 
@@ -91,18 +91,18 @@ Auto-tracks and removes ephemeral files created during sessions — test scripts
 | `chrome-profile` | >14 days since tracked | Always (deep only) |
 | files >500 MB | never auto | Always (deep only) |
 
-**Slash command** — `/disk-cleanup` available in both CLI and gateway sessions:
+**Slash command** — `/disk-REDACTED` available in both CLI and gateway sessions:
 
 ```
-/disk-cleanup status                     # breakdown + top-10 largest
-/disk-cleanup dry-run                    # preview without deleting
-/disk-cleanup quick                      # run safe cleanup now
-/disk-cleanup deep                       # quick + list items needing confirmation
-/disk-cleanup track <path> <category>    # manual tracking
-/disk-cleanup forget <path>              # stop tracking (does not delete)
+/disk-REDACTED status                     # breakdown + top-10 largest
+/disk-REDACTED dry-run                    # preview without deleting
+/disk-REDACTED quick                      # run safe cleanup now
+/disk-REDACTED deep                       # quick + list items needing confirmation
+/disk-REDACTED track <path> <category>    # manual tracking
+/disk-REDACTED forget <path>              # stop tracking (does not delete)
 ```
 
-**State** — everything lives at `$HERMES_HOME/disk-cleanup/`:
+**State** — everything lives at `$HERMES_HOME/disk-REDACTED/`:
 
 | File | Contents |
 |---|---|
@@ -110,11 +110,11 @@ Auto-tracks and removes ephemeral files created during sessions — test scripts
 | `tracked.json.bak` | Atomic-write backup of the above |
 | `cleanup.log` | Append-only audit trail of every track / skip / reject / delete |
 
-**Safety** — cleanup only ever touches paths under `HERMES_HOME` or `/tmp/hermes-*`. Windows mounts (`/mnt/c/...`) are rejected. Well-known top-level state dirs (`logs/`, `memories/`, `sessions/`, `cron/`, `cache/`, `skills/`, `plugins/`, `disk-cleanup/` itself) are never removed even when empty — a fresh install does not get gutted on first session end.
+**Safety** — cleanup only ever touches paths under `HERMES_HOME` or `/tmp/hermes-*`. Windows mounts (`/mnt/c/...`) are rejected. Well-known top-level state dirs (`logs/`, `memories/`, `sessions/`, `cron/`, `cache/`, `skills/`, `plugins/`, `disk-REDACTED/` itself) are never removed even when empty — a fresh install does not get gutted on first session end.
 
-**Enabling:** `hermes plugins enable disk-cleanup` (or check the box in `hermes plugins`).
+**Enabling:** `hermes plugins enable disk-REDACTED` (or check the box in `hermes plugins`).
 
-**Disabling again:** `hermes plugins disable disk-cleanup`.
+**Disabling again:** `hermes plugins disable disk-REDACTED`.
 
 ### observability/langfuse
 

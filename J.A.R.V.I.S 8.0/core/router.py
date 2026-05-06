@@ -37,7 +37,7 @@ class LLMRouter:
             response = requests.post(
                 f"{OLLAMA_URL}/generate",
                 json={"model": SLM_MODEL, "prompt": prompt, "stream": False},
-                timeout=10,
+                timeout=60,
             )
             response.raise_for_status()
             score_text = response.json().get("response", "1.0").strip()

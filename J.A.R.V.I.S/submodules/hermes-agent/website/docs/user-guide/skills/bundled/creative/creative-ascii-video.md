@@ -105,7 +105,7 @@ INPUT → ANALYZE → SCENE_FN → TONEMAP → SHADE → ENCODE
 | **Coordinate space** | Cartesian, polar, tiled, rotated, fisheye, Möbius, domain-warped | `effects.md` § Transforms |
 | **Feedback** | Zoom tunnel, rainbow trails, ghostly echo, rotating mandala, color evolution | `composition.md` § Feedback |
 | **Masking** | Circle, ring, gradient, text stencil, animated iris/wipe/dissolve | `composition.md` § Masking |
-| **Transitions** | Crossfade, wipe, dissolve, glitch cut, iris, mask-based reveal | `shaders.md` § Transitions |
+| **Transitions** | Crossfade, wipe, dissolve, glitch cut, iris, mask-REDACTED reveal | `shaders.md` § Transitions |
 
 ### Per-Section Variation
 

@@ -91,7 +91,7 @@ class Orchestrator:
             response = requests.post(
                 f"{OLLAMA_URL}/generate",
                 json={"model": SLM_MODEL, "prompt": prompt, "stream": False},
-                timeout=15,
+                timeout=60,
             )
             response.raise_for_status()
             result = response.json().get(

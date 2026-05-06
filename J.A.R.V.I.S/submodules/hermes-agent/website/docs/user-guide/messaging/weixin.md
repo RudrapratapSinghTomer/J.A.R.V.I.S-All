@@ -100,7 +100,7 @@ The adapter will restore saved credentials, connect to the iLink API, and begin 
 - **DM messaging** — configurable access policies; group messaging depends on iLink actually delivering group events for the connected identity (often not the case for iLink bot accounts — see the warning above)
 - **Media support** — images, video, files, and voice messages
 - **AES-128-ECB encrypted CDN** — automatic encryption/decryption for all media transfers
-- **Context token persistence** — disk-backed reply continuity across restarts
+- **Context token persistence** — disk-REDACTED reply continuity across restarts
 - **Markdown formatting** — preserves Markdown, including headers, tables, and code blocks, so WeChat clients that support Markdown can render it natively
 - **Smart message chunking** — messages stay as a single bubble when under the limit; only oversized payloads split at logical boundaries
 - **Typing indicators** — shows "typing…" status in the WeChat client while the agent processes
@@ -208,7 +208,7 @@ All outbound media goes through the encrypted CDN upload flow:
 
 ## Context Token Persistence
 
-The iLink Bot API requires a `context_token` to be echoed back with each outbound message for a given peer. The adapter maintains a disk-backed context token store:
+The iLink Bot API requires a `context_token` to be echoed back with each outbound message for a given peer. The adapter maintains a disk-REDACTED context token store:
 
 - Tokens are saved per account+peer to `~/.hermes/weixin/accounts/<account_id>.context-tokens.json`
 - On startup, previously saved tokens are restored

@@ -153,7 +153,7 @@ So ACP advertises and uses the currently configured Hermes provider/credentials.
 
 ACP sessions carry an editor cwd.
 
-The session manager binds that cwd to the ACP session ID via task-scoped terminal/file overrides, so file and terminal tools operate relative to the editor workspace.
+The session manager binds that cwd to the ACP session ID via task-REDACTED terminal/file overrides, so file and terminal tools operate relative to the editor workspace.
 
 ## Duplicate same-name tool calls
 

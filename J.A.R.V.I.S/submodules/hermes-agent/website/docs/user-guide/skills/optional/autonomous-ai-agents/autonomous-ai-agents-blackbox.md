@@ -85,7 +85,7 @@ Blackbox CLI has built-in checkpoint support for pausing and resuming tasks:
 ```
 # After a task completes, Blackbox shows a checkpoint tag
 # Resume with a follow-up task:
-terminal(command="blackbox --resume-checkpoint 'task-abc123-2026-03-06' --prompt 'Now add rate limiting to the endpoints'", workdir="~/project", pty=true)
+terminal(command="blackbox --resume-checkpoint 'task-REDACTED' --prompt 'Now add rate limiting to the endpoints'", workdir="~/project", pty=true)
 ```
 
 ## Session Commands

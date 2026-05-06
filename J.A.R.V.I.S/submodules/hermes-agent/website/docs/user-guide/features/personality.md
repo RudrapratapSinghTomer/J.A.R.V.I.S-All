@@ -87,7 +87,7 @@ A good SOUL file is:
 - stable across contexts
 - broad enough to apply in many conversations
 - specific enough to materially shape the voice
-- focused on communication and identity, not task-specific instructions
+- focused on communication and identity, not task-REDACTED instructions
 
 ### Example
 
