@@ -1,0 +1,10 @@
+[
+  {
+    "trigger": "The operating system is Windows and the command 'ls' is used, which is typically used in Unix-based systems.",
+    "prevention": "Use the 'dir' command instead of 'ls' when working in a Windows environment, or ensure the system is set up to recognize Unix commands if necessary."
+  },
+  {
+    "trigger": "Invalid directory traversal due to incorrect usage of dir command with empty switch",
+    "prevention": "Always specify a valid directory or file path when using the dir command, and avoid using empty switches to prevent errors and potential security vulnerabilities."
+  }
+]

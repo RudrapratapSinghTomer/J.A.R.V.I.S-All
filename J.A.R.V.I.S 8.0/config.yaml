@@ -1,0 +1,22 @@
+# Jarvis 8.0 Configuration
+
+models:
+  local:
+    endpoint: "http://localhost:11434/api"
+    slm: "qwen2.5:7b"
+    vlm: "llama3.2-vision:11b"
+  cloud:
+    api_base: "https://integrate.api.nvidia.com/v1"
+    # Note: NVIDIA NIM API key should be set via environment variable NVIDIA_API_KEY
+    lrm: "nvidia/nemotron-3-super-120b" # or meta/llama-3.1-405b-instruct
+    moe: "mistralai/mixtral-8x22b-instruct-v0.1"
+
+routing:
+  semantic_threshold: 0.7 # >0.7 routes to cloud LRM, <=0.7 routes to local SLM
+
+security:
+  # Strict constraint: Jarvis 8.0 can only write within this directory
+  allowed_write_directory: "C:/Users/developer/Desktop/J.A.R.V.I.S All/jarvis-os"
+
+docker:
+  sandbox_image: "python:3.10-slim"

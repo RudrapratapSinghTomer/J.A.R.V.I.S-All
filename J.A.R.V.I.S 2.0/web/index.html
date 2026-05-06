@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. 2.0 | Neural Command Interface</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="iron-man-theme">
+    <div class="glow-bg"></div>
+    <div class="scanline"></div>
+    <div class="vignette"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="glass-sidebar">
+            <div class="logo">
+                <div class="logo-orb pulse-arc"></div>
+                <span>J.A.R.V.I.S.</span>
+            </div>
+            <div class="nav-items">
+                <div class="nav-item active" data-tab="hud" title="Live HUD">⊞</div>
+                <div class="nav-item" data-tab="neural" title="Neural Mapping">🌐</div>
+                <div class="nav-item" data-tab="security" title="Security & Monitoring">🛡️</div>
+                <div class="nav-item" data-tab="memory" title="Memory Vault">🧬</div>
+            </div>
+            <div class="user-profile">
+                <div class="avatar" id="auth-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="system-status">
+                    <span class="status-dot green"></span>
+                    <span id="system-mode">SYSTEM OPERATIONAL | NEURAL CORE NOMINAL</span>
+                </div>
+                <div class="breadcrumb" id="active-tab-label">LIVE HUD</div>
+                <div class="clock" id="clock">00:00:00</div>
+            </header>
+
+            <!-- Tab 1: Live HUD -->
+            <div id="tab-hud" class="tab-content active">
+                <div class="dashboard-grid">
+                    <!-- Left: Identity & Biometrics -->
+                    <section class="panel glass-card" id="identity-panel">
+                        <div class="panel-header">
+                            <h3>IDENTITY & TRUST</h3>
+                            <span class="panel-tag">SECURE</span>
+                        </div>
+                        <div class="biometric-display">
+                            <div class="arc-reactor">
+                                <div class="arc-inner"></div>
+                                <div class="arc-lines"></div>
+                            </div>
+                            <div class="host-info">
+                                <h2 id="host-name">UNAUTHORIZED</h2>
+                                <p id="trust-level">Trust: 0.0%</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Center: Neural Core Pulse -->
+                    <section class="panel center-panel">
+                        <div class="core-visualizer">
+                            <div class="core-layers">
+                                <div class="core-layer l1"></div>
+                                <div class="core-layer l2"></div>
+                                <div class="core-layer l3"></div>
+                                <div class="core-glow"></div>
+                            </div>
+                            <div class="consciousness-state">
+                                <div id="thinking-indicator" class="thinking-hidden">
+                                    <span class="thinking-dot"></span>
+                                    <span id="thought-process">NEURAL CHAIN ACTIVE</span>
+                                </div>
+                                <span id="mood-label">MOOD: CALM</span>
+                                <div class="mood-bar-container">
+                                    <div class="mood-bar" id="mood-intensity"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Right: Hardware Proprioception -->
+                    <section class="panel glass-card" id="hardware-panel">
+                        <div class="panel-header">
+                            <h3>PROPRIOCEPTION</h3>
+                            <span class="panel-tag">LIVE</span>
+                        </div>
+                        <div class="stats-list">
+                            <div class="stat-item">
+                                <div class="stat-info"><span>CPU LOAD</span><span id="cpu-val">0%</span></div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" id="cpu-fill"></div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-info"><span>MEMORY</span><span id="mem-val">0%</span></div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" id="mem-fill"></div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-info"><span>CORE TEMP</span><span id="temp-val">NOMINAL</span></div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: 100%; opacity: 0.3;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Bottom: Neural Log Stream -->
+                    <section class="panel glass-card log-panel">
+                        <div class="panel-header">
+                            <h3>NEURAL LOG STREAM</h3>
+                            <div class="terminal-controls"><span></span><span></span><span></span></div>
+                        </div>
+                        <div class="log-container" id="log-stream">
+                            <p class="log-entry sys">> Initializing visual core...</p>
+                        </div>
+                        <div class="command-input-container">
+                            <input type="text" id="web-command" placeholder="Send a command (e.g. /status)">
+                            <button id="send-command">SEND</button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Tab 2: Neural Mapping -->
+            <div id="tab-neural" class="tab-content">
+                <div class="neural-map-grid">
+                    <section class="panel glass-card thinking-panel">
+                        <div class="panel-header">
+                            <h3>THINKING STREAM (INTERNAL MONOLOGUE)</h3>
+                        </div>
+                        <div id="cot-feed" class="mono-feed">
+                            <p class="entry">Waiting for neural activity...</p>
+                        </div>
+                    </section>
+                    <section class="panel glass-card memory-panel">
+                        <div class="panel-header">
+                            <h3>MEMORY GRAPH</h3>
+                        </div>
+                        <div id="memory-viz" class="viz-container">
+                            <!-- Memory nodes will be rendered here -->
+                            <div class="viz-placeholder">CALIBRATING NEURAL NODES...</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Tab 3: Security & Monitoring -->
+            <div id="tab-security" class="tab-content">
+                <div class="security-grid">
+                    <section class="panel glass-card vision-panel">
+                        <div class="panel-header">
+                            <h3>VISUAL PROPRIOCEPTION (SCREEN FEED)</h3><span class="fps-tag">60 FPS</span>
+                        </div>
+                        <div class="vision-feed">
+                            <div class="feed-overlay">
+                                <div class="crosshair"></div>
+                                <div class="target-box"></div>
+                            </div>
+                            <div class="feed-placeholder">CONNECTED TO DXCAM...</div>
+                        </div>
+                    </section>
+                    <section class="panel glass-card audit-panel">
+                        <div class="panel-header">
+                            <h3>IMMUNE SYSTEM AUDITS</h3>
+                        </div>
+                        <div id="audit-logs" class="mono-feed">
+                            <p class="entry sys">No anomalies detected in the last 24 cycles.</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

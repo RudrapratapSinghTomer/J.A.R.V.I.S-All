@@ -1,0 +1,13 @@
+langgraph
+langchain
+mem0ai
+docker
+openai
+pyyaml
+requests
+beautifulsoup4
+chromadb
+python-dotenv
+google-genai
+
+

@@ -1,0 +1,1 @@
+from openai import OpenAI\nimport os\n\nclient = OpenAI(api_key=os.getenv('JARVIS_HF_TOKEN'), base_url='https://integrate.api.nvidia.com/v1')\nresponse = client.chat.completions.create(model='meta/llama-3.1-405b-instruct', messages=[{'role': 'user', 'content': 'Generate a system summary'}])\nprint(response)

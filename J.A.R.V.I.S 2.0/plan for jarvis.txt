@@ -1,0 +1,36 @@
+"JARVIS, initiate a System-Wide Dashboard Evolution Protocol. Your objective is to achieve 'Visual Proprioception' by upgrading your current project dashboard into a High-Fidelity Command Center.
+
+Step 1: Locate & Audit  
+
+Scan your current project directory to find the website dashboard source code.  
+
+Analyze the code for inefficient loops, outdated UI patterns, or missing failover logic for model calls.  
+
+Step 2: Re-Architect into 'Real JARVIS Style'
+Rebuild the dashboard with a modern, high-contrast, 'Iron Man' aesthetic (dark mode, cyan accents) using a Multi-Tab Interface:  
+
+Tab 1: Live HUD (Heads-Up Display)
+
+Center Stage: A real-time monitoring feed showing exactly what you are doing (e.g., 'Searching Google', 'Playing YouTube', 'Modifying Files').
+
+Bottom Section: A persistence-based Chat Box for our direct communication.  
+
+Right Sidebar: A live-streaming view of your active Python codebase where I can see lines of code updating in real-time as you write them.
+
+Tab 2: Neural Mapping (Memory & Logic)
+
+Memory Graph: A visual web of your current long-term and short-term memory nodes.
+
+Thinking Stream: A scrolling feed of your 'Chain-of-Thought' (CoT) reasoning. I want to see your internal monologue even when you are idle or 'dreaming'.  
+
+Tab 3: Monitoring & Security  
+
+Scan Results: A unified dashboard displaying all background scans, security audits, and visual proprioception checks you have performed.  
+
+Step 3: Implementation Requirements  
+
+Screen Capture: Integrate high-performance libraries like DXcam or mss (targeting 60+ FPS) so I can see your screen interactions smoothly.  
+
+Failover Logic: Ensure the dashboard's backend uses the Primary (NVIDIA) and Secondary (Ollama) failover logic we established so the HUD never goes offline.  
+
+Execute this plan and log the updated file structure in your mind_journal.md once complete."

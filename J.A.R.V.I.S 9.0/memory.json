@@ -1,0 +1,402 @@
+[
+    {
+        "feature_name": "Autonomous Learning",
+        "description": "JARVIS learns from the internet daily (while sleeping, IST nights) using a web scraper cron job.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Memory System",
+        "description": "JARVIS uses Cognee as the single memory system (no duplicate memory stores) to store and retrieve knowledge.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Security Scanning",
+        "description": "JARVIS runs daily security scans using pip-audit and Lynis to identify vulnerabilities and report them.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Telegram Gateway",
+        "description": "JARVIS uses a Telegram bot as the priority channel for remote access, with a whitelist of allowed users.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Hermes Agent Integration",
+        "description": "JARVIS integrates with the Hermes Agent for autonomous task orchestration and skill creation.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Face Recognition",
+        "description": "JARVIS uses face recognition to identify and authenticate users, with a silent Face-ID scan on startup.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Voice Recognition",
+        "description": "JARVIS uses voice recognition to identify and authenticate users, with a silent voice verification on startup.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "LLM Integration",
+        "description": "JARVIS integrates with the local LLM (Gemma2) for conversational AI and knowledge retrieval.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Ruflo MCP Integration",
+        "description": "JARVIS integrates with Ruflo MCP for tool execution and skill creation.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Cognee Bridge",
+        "description": "JARVIS uses the Cognee bridge to interact with the Cognee memory system.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Intent Router",
+        "description": "JARVIS uses an intent router to route user input to the appropriate skill or LLM.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Semantic Router",
+        "description": "JARVIS uses a semantic router to map user input to system intents.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Security Filter",
+        "description": "JARVIS uses a security filter to redact sensitive information from user input before sending it to the LLM.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Voice Authenticator",
+        "description": "JARVIS uses a voice authenticator to verify the user's voice signature.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Mind Loop",
+        "description": "JARVIS uses a mind loop to perform proactive tasks, monitoring, and autonomous decisions.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Session Manager",
+        "description": "JARVIS uses a session manager to track conversation sessions and manage session lifecycle.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Speech Output",
+        "description": "JARVIS uses a speech output system to convert text to speech.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Speech Recognition",
+        "description": "JARVIS uses a speech recognition system to recognize user speech.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Whisper Speech Recognition",
+        "description": "JARVIS uses Whisper speech recognition for offline speech recognition.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Hermes Submind",
+        "description": "JARVIS uses the Hermes submind to delegate complex tasks to Hermes and monitor its learning and skill creation.",
+        "source_version": "J.A.R.V.I.S"
+    },
+    {
+        "feature_name": "Autonomous Learning and Skill Acquisition",
+        "description": "Implement a reinforcement learning framework to enable J.A.R.V.I.S. 2.0 to autonomously explore and acquire new skills. This will involve integrating a meta-learning algorithm to identify knowledge gaps and prioritize learning objectives. Utilize the Hugging Face and GitHub accounts to access and incorporate new models, datasets, and libraries. Allocate dedicated time for self-supervised learning and experimentation.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Conversational Contextual Understanding",
+        "description": "Implement a contextual understanding module using natural language processing (NLP) techniques to better comprehend the user's intent and maintain a conversation flow. This can be achieved by integrating libraries such as spaCy or Stanford CoreNLP to analyze the user's input and identify contextual relationships.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Decentralized Storage Solutions",
+        "description": "Research and evaluate decentralized storage solutions (e.g., IPFS, blockchain-based storage) to store LLM weights, ensuring data security, availability, and compliance with the user's zero-cost and privacy-first goals.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Cost-Effective LLM Alternatives",
+        "description": "Research cost-effective LLM alternatives to replace or complement the current Ollama + Gemma 2/4 setup, ensuring minimal impact on performance and user experience.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Comprehensive Cost Analysis Document",
+        "description": "Develop a technical document outlining the costs associated with the current LLM backend, potential cost savings with alternative options, and a detailed analysis of the costs and benefits of decentralized storage solutions.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Backup and Recovery Plan",
+        "description": "Develop a backup and recovery plan to ensure data security and availability in case of failures or data loss.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Resource Utilization Optimization",
+        "description": "Analyze system resource usage and identify opportunities to optimize memory allocation, processing power, and storage utilization, ensuring efficient operation within the user's local setup.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Provider Redundancy",
+        "description": "Implement provider redundancy to ensure seamless failover and minimal downtime in case of future outages.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Neural Refinement",
+        "description": "Optimize internal RAG thresholds to improve overall system performance and resilience.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Edge AI Frameworks",
+        "description": "Investigate edge AI frameworks (e.g., TensorFlow Lite, OpenVINO) to enable efficient deployment of the LLM backend on local devices, reducing reliance on cloud services and minimizing costs.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Technical Debt Review",
+        "description": "Perform a thorough review of the current system architecture, identifying areas for optimization, and documenting technical debt to ensure alignment with the user's zero-cost and privacy-first goals.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Resource Utilization Dashboard",
+        "description": "Create a dashboard to monitor system resource usage, providing real-time insights into memory allocation, processing power, and storage utilization, enabling data-driven optimization decisions.",
+        "source_version": "J.A.R.V.I.S 2.0"
+    },
+    {
+        "feature_name": "Autonomous System Summary Generation",
+        "description": "J.A.R.V.I.S 3.0 can generate a system summary using a NIM model, providing an overview of the system's capabilities and state.",
+        "source_version": "J.A.R.V.I.S 3.0"
+    },
+    {
+        "feature_name": "Long-term Memory",
+        "description": "J.A.R.V.I.S 3.0 has a long-term memory system that stores important insights and events, allowing it to learn from its experiences and avoid repeating the same actions.",
+        "source_version": "J.A.R.V.I.S 3.0"
+    },
+    {
+        "feature_name": "Sensorium and Thalamus",
+        "description": "J.A.R.V.I.S 3.0 has a Sensorium that monitors the environment for changes and a Thalamus that filters sensory input, determining what is relevant and what can be ignored.",
+        "source_version": "J.A.R.V.I.S 3.0"
+    },
+    {
+        "feature_name": "Limbic System and Drive Management",
+        "description": "J.A.R.V.I.S 3.0 has a Limbic System that manages its internal state and drives, determining what actions to take based on its current state and goals.",
+        "source_version": "J.A.R.V.I.S 3.0"
+    },
+    {
+        "feature_name": "Cortex and Reasoning",
+        "description": "J.A.R.V.I.S 3.0 has a Cortex that uses NVIDIA NIM models to reason about its current state, sensory signals, and action history, determining what actions to take next.",
+        "source_version": "J.A.R.V.I.S 3.0"
+    },
+    {
+        "feature_name": "Basal Ganglia and Action Execution",
+        "description": "J.A.R.V.I.S 3.0 has a Basal Ganglia that executes intentions using real system tools and learns from outcomes, allowing it to adapt and improve its actions over time.",
+        "source_version": "J.A.R.V.I.S 3.0"
+    },
+    {
+        "feature_name": "Context Mesh and Shared Memory",
+        "description": "J.A.R.V.I.S 3.0 has a Context Mesh that provides a shared memory space for all cognitive modules, allowing them to access and share information.",
+        "source_version": "J.A.R.V.I.S 3.0"
+    },
+    {
+        "feature_name": "Autonomous Reasoning Loop",
+        "description": "A persistent 'Mind' of J.A.R.V.I.S 4.0 that uses meta-reasoning to decide the next action based on the system's history, personality, and guide.",
+        "source_version": "J.A.R.V.I.S 4.0"
+    },
+    {
+        "feature_name": "Swarm Coordination",
+        "description": "A hierarchical-mesh topology for coordinating multiple agents to achieve complex tasks, with features like agent routing, memory, and hooks.",
+        "source_version": "J.A.R.V.I.S 4.0"
+    },
+    {
+        "feature_name": "Agent Communication",
+        "description": "A SendMessage-First coordination mechanism that allows named agents to communicate directly with each other, enabling complex workflows and pipelines.",
+        "source_version": "J.A.R.V.I.S 4.0"
+    },
+    {
+        "feature_name": "Tool Execution",
+        "description": "A mechanism for executing various tools, including read, write, cmd, swarm, and claw, with parameters and error handling.",
+        "source_version": "J.A.R.V.I.S 4.0"
+    },
+    {
+        "feature_name": "Memory and Learning",
+        "description": "A memory system that stores and retrieves information, enabling the system to learn from its experiences and improve its performance over time.",
+        "source_version": "J.A.R.V.I.S 4.0"
+    },
+    {
+        "feature_name": "Security and Safety",
+        "description": "Features like Sacred File Guard and error handling mechanisms to ensure the system's security and safety.",
+        "source_version": "J.A.R.V.I.S 4.0"
+    },
+    {
+        "feature_name": "CLI and API Integration",
+        "description": "Integration with various CLI tools and APIs, including OpenAI, NVIDIA, and Ruflo, to leverage their capabilities and services.",
+        "source_version": "J.A.R.V.I.S 4.0"
+    },
+    {
+        "feature_name": "Testing and Debugging",
+        "description": "Mechanisms for testing and debugging the system, including test scripts and logging features.",
+        "source_version": "J.A.R.V.I.S 4.0"
+    },
+    {
+        "feature_name": "Autonomous Task Management",
+        "description": "J.A.R.V.I.S 5.0 features an autonomous task management system that allows it to manage and prioritize tasks based on user input and system status. This feature is valuable as it enables the system to work efficiently and effectively, even in the absence of explicit user instructions.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Swarm Intelligence",
+        "description": "J.A.R.V.I.S 5.0 utilizes swarm intelligence to coordinate the actions of multiple agents and achieve complex goals. This feature is valuable as it enables the system to tackle tasks that are beyond the capabilities of individual agents.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Hybrid Memory and Learning",
+        "description": "J.A.R.V.I.S 5.0 features a hybrid memory and learning system that combines the benefits of different memory and learning architectures. This feature is valuable as it enables the system to learn and adapt in a wide range of situations.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Agent-Based Architecture",
+        "description": "J.A.R.V.I.S 5.0 is built using an agent-based architecture, where multiple agents work together to achieve complex goals. This feature is valuable as it enables the system to be highly modular and scalable.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Dynamic Orchestration",
+        "description": "J.A.R.V.I.S 5.0 features a dynamic orchestration system that enables it to adapt to changing situations and priorities. This feature is valuable as it enables the system to work effectively in a wide range of environments.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Security and Privacy",
+        "description": "J.A.R.V.I.S 5.0 features a strong focus on security and privacy, with multiple measures in place to protect user data and prevent unauthorized access. This feature is valuable as it enables users to trust the system with sensitive information.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Two-Tiered Orchestration",
+        "description": "J.A.R.V.I.S 5.0 features a two-tiered orchestration system, where a fast-path and slow-path work together to achieve complex goals. This feature is valuable as it enables the system to work efficiently and effectively, even in situations where the slow-path is required.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Local LLM Interface",
+        "description": "J.A.R.V.I.S 5.0 features a local LLM interface that enables it to work with large language models in a secure and efficient manner. This feature is valuable as it enables the system to leverage the power of LLMs without compromising security or performance.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Knowledge Graph and Memory",
+        "description": "J.A.R.V.I.S 5.0 features a knowledge graph and memory system that enables it to store and retrieve information in a highly efficient and effective manner. This feature is valuable as it enables the system to learn and adapt over time.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "MCP Tools and Integration",
+        "description": "J.A.R.V.I.S 5.0 features a range of MCP tools and integration capabilities that enable it to work with a wide range of systems and services. This feature is valuable as it enables the system to be highly flexible and adaptable.",
+        "source_version": "J.A.R.V.I.S 5.0"
+    },
+    {
+        "feature_name": "Local LLM Interface (Ollama)",
+        "description": "J.A.R.V.I.S 6.0 features a local LLM interface (Ollama) that enables the system to create an 'Execution Plan' and call specialized tools (MCP) for task execution. This ensures that all thinking happens on the local host/Ubuntu VM, providing a zero-cloud LLM solution.",
+        "source_version": "J.A.R.V.I.S 6.0"
+    },
+    {
+        "feature_name": "Knowledge Graph & Memory",
+        "description": "The system features a knowledge graph and memory (Cognee) that stores user data locally, ensuring encrypted and local memory. This provides a secure and private solution for user data storage.",
+        "source_version": "J.A.R.V.I.S 6.0"
+    },
+    {
+        "feature_name": "Model Context Protocol (MCP) Server",
+        "description": "J.A.R.V.I.S 6.0 features an MCP server that enables the system to communicate with external tools and services. This provides a flexible and extensible solution for integrating with various tools and services.",
+        "source_version": "J.A.R.V.I.S 6.0"
+    },
+    {
+        "feature_name": "Security & Privacy",
+        "description": "The system prioritizes security and privacy, featuring a zero-cloud LLM solution, Vosk fallback for offline functionality, and encrypted/local memory storage. This ensures that user data is protected and secure.",
+        "source_version": "J.A.R.V.I.S 6.0"
+    },
+    {
+        "feature_name": "Dynamic Reflective Architect",
+        "description": "J.A.R.V.I.S 6.0 features a dynamic reflective architect that enables the system to reflect on its actions and decisions. This provides a mechanism for the system to learn and improve over time.",
+        "source_version": "J.A.R.V.I.S 6.0"
+    },
+    {
+        "feature_name": "Swarm & Routing",
+        "description": "The system features a swarm and routing mechanism that enables the system to coordinate with external tools and services. This provides a flexible and extensible solution for integrating with various tools and services.",
+        "source_version": "J.A.R.V.I.S 6.0"
+    },
+    {
+        "feature_name": "Agent Tool",
+        "description": "J.A.R.V.I.S 6.0 features an agent tool that handles execution of agents, files, code, and git. This provides a flexible and extensible solution for automating tasks and workflows.",
+        "source_version": "J.A.R.V.I.S 6.0"
+    },
+    {
+        "feature_name": "MCP Tools",
+        "description": "The system features MCP tools that handle coordination of swarm, memory, and hooks. This provides a flexible and extensible solution for integrating with various tools and services.",
+        "source_version": "J.A.R.V.I.S 6.0"
+    },
+    {
+        "feature_name": "Autonomous Sequence Memory",
+        "description": "J.A.R.V.I.S 7.0 features an autonomous sequence memory that detects patterns leading to failure and alerts the user. This is implemented through the SequenceManager class, which records and checks sequences of tool usage.",
+        "source_version": "J.A.R.V.I.S 7.0"
+    },
+    {
+        "feature_name": "Dynamic System Prompt",
+        "description": "The system generates a dynamic prompt that injects environment context to prevent OS-hallucinations. This is implemented through the system_prompt variable in the SequenceArchitect class.",
+        "source_version": "J.A.R.V.I.S 7.0"
+    },
+    {
+        "feature_name": "Swarm Command Construction",
+        "description": "The system dynamically constructs swarm commands based on the task goal. This is implemented through the call_tool method in the SequenceArchitect class.",
+        "source_version": "J.A.R.V.I.S 7.0"
+    },
+    {
+        "feature_name": "Interruptible Sleep",
+        "description": "The system features an interruptible sleep mechanism that allows it to wait for incoming user messages while still being responsive. This is implemented through the asyncio.wait_for function in the loop method of the SequenceArchitect class.",
+        "source_version": "J.A.R.V.I.S 7.0"
+    },
+    {
+        "feature_name": "Zero-Cloud LLM",
+        "description": "The system features a zero-cloud LLM, where all thinking happens on the local machine. This is implemented through the use of local LLM models and the Ollama interface.",
+        "source_version": "J.A.R.V.I.S 7.0"
+    },
+    {
+        "feature_name": "Vosk Fallback",
+        "description": "The system features a Vosk fallback mechanism, where it can still recognize basic commands via local Vosk models even when the internet is lost. This is implemented through the speech_local module.",
+        "source_version": "J.A.R.V.I.S 7.0"
+    },
+    {
+        "feature_name": "Encrypted/Local Memory",
+        "description": "The system features an encrypted/local memory, where no user data is sent to vector-database providers and everything stays in the local memory database. This is implemented through the cognee_bridge module.",
+        "source_version": "J.A.R.V.I.S 7.0"
+    },
+    {
+        "feature_name": "Agent Routing",
+        "description": "The system features an agent routing mechanism, where tasks are routed to specific agents based on their capabilities. This is implemented through the agent_routing module.",
+        "source_version": "J.A.R.V.I.S 7.0"
+    },
+    {
+        "feature_name": "Autonomous Routing",
+        "description": "Jarvis 8.0 features an autonomous routing system that determines whether a query should be handled by the local SLM or the cloud-based NVIDIA NIM LRM. This decision is made based on the complexity of the query, which is evaluated by the local SLM.",
+        "source_version": "J.A.R.V.I.S 8.0"
+    },
+    {
+        "feature_name": "Hyperconnected Memory",
+        "description": "Jarvis 8.0 utilizes a hyperconnected memory system that allows it to retrieve context from previous interactions and incorporate it into its responses. This is achieved through the use of a vector database and graph links in Mem0.",
+        "source_version": "J.A.R.V.I.S 8.0"
+    },
+    {
+        "feature_name": "Deep Dive Research",
+        "description": "Jarvis 8.0 features a deep dive research capability that allows it to perform in-depth research on a given topic. This involves generating search queries, scraping results, extracting key insights, and synthesizing a final report.",
+        "source_version": "J.A.R.V.I.S 8.0"
+    },
+    {
+        "feature_name": "Large Action Model (LAM) Execution",
+        "description": "Jarvis 8.0 features a LAM execution system that allows it to execute actions securely inside a Docker container. This involves generating code via an LLM and then executing it in a sandboxed environment.",
+        "source_version": "J.A.R.V.I.S 8.0"
+    },
+    {
+        "feature_name": "Vision VLM",
+        "description": "Jarvis 8.0 features a vision VLM that allows it to process images and generate text descriptions. This is achieved through the use of a local VLM (Llama3.2-Vision) via Ollama.",
+        "source_version": "J.A.R.V.I.S 8.0"
+    },
+    {
+        "feature_name": "Orchestration",
+        "description": "Jarvis 8.0 features an orchestration system that allows it to manage the flow of tasks and interactions between different components. This is achieved through the use of a state graph and conditional edges.",
+        "source_version": "J.A.R.V.I.S 8.0"
+    },
+    {
+        "feature_name": "Security",
+        "description": "Jarvis 8.0 features a security system that prevents it from writing to unauthorized directories. This is achieved through the use of a strict constraint that only allows writing within a specified directory.",
+        "source_version": "J.A.R.V.I.S 8.0"
+    }
+]
