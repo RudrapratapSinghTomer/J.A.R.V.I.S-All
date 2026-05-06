@@ -3,7 +3,7 @@
 models:
   local:
     endpoint: "http://localhost:11434/api"
-    slm: "qwen2.5:7b"
+    slm: "qwen3:4b-instruct"   # Switched from qwen2.5:7b — faster for Edge Guard routing
     vlm: "llama3.2-vision:11b"
   cloud:
     api_base: "https://integrate.api.nvidia.com/v1"
@@ -15,8 +15,8 @@ routing:
   semantic_threshold: 0.7 # >0.7 routes to cloud LRM, <=0.7 routes to local SLM
 
 security:
-  # Strict constraint: Jarvis 8.0 can only write within this directory
-  allowed_write_directory: "C:/Users/developer/Desktop/J.A.R.V.I.S All/jarvis-os"
+  # Jarvis 8.0 can write anywhere within the J.A.R.V.I.S All repo
+  allowed_write_directory: "C:/Users/developer/Desktop/J.A.R.V.I.S All"
 
 docker:
   sandbox_image: "python:3.10-slim"

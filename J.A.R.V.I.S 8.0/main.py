@@ -1,57 +1,64 @@
 import os
 import sys
 
-# Ensure jarvis-os directory is in the path
+# Ensure jarvis 8.0 directory is in the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from dotenv import load_dotenv
 from core.router import LLMRouter
 from core.memory_mhc import MHC_Memory
 from core.orchestrator import Orchestrator
 from agents.researcher import AutoResearcher
 from agents.executor_lam import ExecutorLAM
-
-
-from dotenv import load_dotenv
+from agents.vision_vlm import VisionVLM
 
 
 def main():
     load_dotenv()
     print("Initializing Jarvis 8.0 MAOS...")
 
-    # Initialize Core Components
-    router = LLMRouter()
+    # --- Core Components ---
+    router     = LLMRouter()
     mhc_memory = MHC_Memory()
 
-    # Initialize Agents
+    # --- Agents ---
     researcher = AutoResearcher()
-    executor = ExecutorLAM()
+    executor   = ExecutorLAM()
+    vision     = VisionVLM()
 
-    # Initialize Orchestrator
-    jarvis = Orchestrator(router, mhc_memory, researcher, executor)
+    # --- Orchestrator (all components wired) ---
+    jarvis = Orchestrator(router, mhc_memory, researcher, executor, vision=vision)
 
-    print("\n" + "=" * 50)
-    print("Jarvis 8.0 Online.")
-    print("Type 'exit' or 'quit' to terminate.")
-    print("=" * 50 + "\n")
+    print("\n" + "=" * 60)
+    print("  J.A.R.V.I.S 8.0 — Modular Agentic Operating System")
+    print("=" * 60)
+    print("  Commands:")
+    print("    [screen] <question>       — Analyze your live screen")
+    print("    [image: <path/url>] <q>   — Analyze a specific image")
+    print("    research <topic>          — Deep recursive web research")
+    print("    exit / quit               — Shut down")
+    print("=" * 60 + "\n")
 
-    user_id = "developer"  # Default user
+    user_id = os.getenv("JARVIS_USER", "developer")
 
     while True:
         try:
-            query = input(f"[{user_id}]> ")
+            query = input(f"[{user_id}]> ").strip()
+
             if query.lower() in ["exit", "quit"]:
+                print("[JARVIS] Shutting down. Goodbye.")
                 break
 
-            if not query.strip():
+            if not query:
                 continue
 
-            print("\n[Jarvis Processing...]")
+            print("\n[Jarvis Processing...]\n")
             response = jarvis.run(query, user_id=user_id)
 
-            print(f"\n[Jarvis]> {response}\n")
+            print(f"[JARVIS]> {response}\n")
 
         except KeyboardInterrupt:
-            print("\nExiting...")
+            print("\n[JARVIS] Interrupted. Shutting down.")
             break
         except Exception as e:
             print(f"\n[System Error] {e}\n")
