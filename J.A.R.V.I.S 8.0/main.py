@@ -1,4 +1,5 @@
 import os
+
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 import sys
 
@@ -19,13 +20,13 @@ def main():
     print("Initializing Jarvis 8.0 MAOS...")
 
     # --- Core Components ---
-    router     = LLMRouter()
+    router = LLMRouter()
     mhc_memory = MHC_Memory()
 
     # --- Agents ---
     researcher = AutoResearcher()
-    executor   = ExecutorLAM()
-    vision     = VisionVLM()
+    executor = ExecutorLAM()
+    vision = VisionVLM()
 
     # --- Orchestrator (all components wired) ---
     jarvis = Orchestrator(router, mhc_memory, researcher, executor, vision=vision)
