@@ -3,12 +3,12 @@
 models:
   local:
     endpoint: "http://localhost:11434/api"
-    slm: "qwen3:4b-instruct"   # Switched from qwen2.5:7b — faster for Edge Guard routing
+    slm: "qwen2.5:7b" # Switched from qwen2.5:7b — faster for Edge Guard routing
     vlm: "llama3.2-vision:11b"
   cloud:
     api_base: "https://integrate.api.nvidia.com/v1"
     # Note: NVIDIA NIM API key should be set via environment variable NVIDIA_API_KEY
-    lrm: "nvidia/nemotron-3-super-120b" # or meta/llama-3.1-405b-instruct
+    lrm: "meta/llama-3.3-70b-instruct" # or nvidia/nemotron-3-super-120b-a12b
     moe: "mistralai/mixtral-8x22b-instruct-v0.1"
 
 routing:
