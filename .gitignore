@@ -12,4 +12,9 @@ build/
 .idea/
 *.log
 *.tmp
-data/chroma_db/
+# Ignore Jarvis data
+J.A.R.V.I.S 8.0/data/
+J.A.R.V.I.S 8.0/test_output.txt
+# Ignore scratch directory
+scratch/
+**/scratch/
