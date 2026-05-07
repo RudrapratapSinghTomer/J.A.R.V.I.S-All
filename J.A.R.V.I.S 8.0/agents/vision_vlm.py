@@ -35,10 +35,42 @@ class VisionVLM:
     # Core: send image bytes + prompt to local Ollama VLM
     # ------------------------------------------------------------------
     def _query_vlm(self, image_bytes: bytes, prompt: str) -> str:
-        """Encode image and call the local Ollama VLM with cloud fallback."""
-        encoded = base64.b64encode(image_bytes).decode("utf-8")
+        """Encode image and call the Cloud VLM first, with Local VLM as fallback."""
         
-        # Try Local VLM first
+        # Try Cloud Vision (NVIDIA NIM) first - Faster and more reliable
+        print("[VLM] Querying Cloud Vision (NVIDIA NIM)...")
+        nvidia_key = os.getenv("NVIDIA_API_KEY")
+        if nvidia_key:
+            try:
+                from openai import OpenAI
+                client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=nvidia_key)
+                cloud_model = "meta/llama-3.2-90b-vision-instruct"
+                
+                encoded = base64.b64encode(image_bytes).decode("utf-8")
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}}
+                        ]
+                    }
+                ]
+                
+                completion = client.chat.completions.create(
+                    model=cloud_model,
+                    messages=messages,
+                    max_tokens=1024,
+                    timeout=60 # Faster timeout for cloud
+                )
+                return completion.choices[0].message.content
+            except Exception as e:
+                print(f"[VLM] Cloud Vision failed: {e}. Falling back to Local VLM...")
+        else:
+            print("[VLM] NVIDIA_API_KEY missing. Falling back to Local VLM...")
+
+        # Fallback: Local VLM (Ollama)
+        encoded = base64.b64encode(image_bytes).decode("utf-8")
         payload = {
             "model": self.model,
             "prompt": prompt,
@@ -49,45 +81,9 @@ class VisionVLM:
             print(f"[VLM] Querying local model '{self.model}'...")
             response = requests.post(self.endpoint, json=payload, timeout=300)
             response.raise_for_status()
-            return response.json().get("response", "[VLM] No response from model.")
+            return response.json().get("response", "[VLM] No response from local model.")
         except Exception as e:
-            print(f"[VLM] Local VLM failed or timed out: {e}")
-            return self._query_cloud_vlm(image_bytes, prompt)
-
-    def _query_cloud_vlm(self, image_bytes: bytes, prompt: str) -> str:
-        """Fallback: Query NVIDIA NIM vision model."""
-        print("[VLM] Falling back to Cloud Vision (NVIDIA NIM)...")
-        nvidia_key = os.getenv("NVIDIA_API_KEY")
-        if not nvidia_key:
-            return "[VLM] Error: Cloud fallback failed (NVIDIA_API_KEY missing)."
-        
-        try:
-            from openai import OpenAI
-            client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=nvidia_key)
-            
-            # Use a stable vision model from NVIDIA NIM
-            cloud_model = "meta/llama-3.2-90b-vision-instruct"
-            
-            # OpenAI-compatible multi-modal format
-            encoded = base64.b64encode(image_bytes).decode("utf-8")
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}}
-                    ]
-                }
-            ]
-            
-            completion = client.chat.completions.create(
-                model=cloud_model,
-                messages=messages,
-                max_tokens=1024
-            )
-            return completion.choices[0].message.content
-        except Exception as e:
-            return f"[VLM] Cloud fallback failed: {e}"
+            return f"[VLM] All vision models failed: {e}"
 
     # ------------------------------------------------------------------
     # Feature 1: Analyze a local image file

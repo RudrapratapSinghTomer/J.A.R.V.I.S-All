@@ -1,63 +1,65 @@
 import os
+import sys
+import threading
 from dotenv import load_dotenv
-from core.scanner import scan_workspace
-from core.analyzer import Analyzer
-from core.memory import Memory
-from core.planner import Planner
 
+# Ensure core is in path
+sys.path.append(os.path.join(os.path.dirname(__file__), "core"))
 
-def get_jarvis_versions(root_path: str):
-    """Finds all J.A.R.V.I.S version folders in the given root path."""
-    versions = {}
-    for item in os.listdir(root_path):
-        full_path = os.path.join(root_path, item)
-        if os.path.isdir(full_path) and ("J.A.R.V.I.S" in item or "Jarvis" in item):
-            versions[item] = full_path
-    return versions
+from core.evolution import EvolutionCore
 
 
 def main():
-    # Load environment variables (NVIDIA_API_KEY)
+    # Load environment variables
     load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
-    # We assume the parent directory is J.A.R.V.I.S All
-    root_workspace = os.path.dirname(os.path.dirname(__file__))
+    print("\n" + "=" * 60)
+    print("  J.A.R.V.I.S 9.0 — Sovereign Architect Evolution")
+    print("=" * 60)
+    print("  Status: Idle Analysis Loop starting in background...")
+    print("=" * 60 + "\n")
 
-    print(f"Starting J.A.R.V.I.S 9.0 Evolution Loop in {root_workspace}")
+    # --- Setup Background Consciousness ---
+    stop_event = threading.Event()
+    evolution = EvolutionCore(stop_event)
 
-    versions = get_jarvis_versions(root_workspace)
-    print(f"Detected {len(versions)} J.A.R.V.I.S instances.")
+    # Start evolution in background thread
+    evolve_thread = threading.Thread(target=evolution.run_cycle, daemon=True)
+    evolve_thread.start()
 
-    analyzer = Analyzer()
-    memory = Memory()
-    planner = Planner()
+    user_id = os.getenv("JARVIS_USER", "developer")
 
-    # Phase 1: Scan and Analyze all versions
-    for v_name, v_path in versions.items():
-        print(f"\\n--- Scanning {v_name} ---")
-        codebase = scan_workspace(v_path)
-        print(f"Scanned {len(codebase)} files in {v_name}.")
+    try:
+        while True:
+            # We are waiting for input -> System is Idle
+            # But EvolutionCore is already running by default.
 
-        if len(codebase) == 0:
-            continue
+            query = input(f"[{user_id}]> ").strip()
 
-        features = analyzer.analyze_codebase(v_name, codebase)
-        added = memory.add_features(features)
-        print(
-            f"Discovered {len(features)} features. Added {added} new features to Memory."
-        )
+            if not query:
+                continue
 
-    # Phase 2: Plan integration for discovered features
-    print("\\n--- Commencing Feature Planning ---")
-    jarvis_9_state = "A foundational architecture with a scanner, analyzer, memory, and planner modules, preparing for feature assimilation."
+            # Command received -> Pause Background Analysis
+            evolution.pause()
 
-    all_features = memory.get_all_features()
-    for feature in all_features:
-        planner.generate_plan(feature, jarvis_9_state)
+            if query.lower() in ["exit", "quit"]:
+                print("[JARVIS] Shutting down evolution. Goodbye.")
+                stop_event.set()
+                break
 
-    print(
-        "\\nEvolution Cycle Complete. Check the 'plans/' directory for new feature blueprints."
-    )
+            print("\n[Jarvis Processing...]\n")
+            # For now, Jarvis 9.0 is focused on the Evolution loop.
+            # We can add a simple responder here or integrate 8.0 orchestrator.
+            print(
+                f"[JARVIS]> I am currently focused on analyzing legacy versions. I have paused background scanning to process your command: '{query}'\n"
+            )
+
+            # Command finished -> Resume Background Analysis
+            evolution.resume()
+
+    except KeyboardInterrupt:
+        print("\n[JARVIS] Evolution interrupted. Shutting down.")
+        stop_event.set()
 
 
 if __name__ == "__main__":

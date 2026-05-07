@@ -106,6 +106,8 @@ class Orchestrator:
             return "vision"
         if any(kw in query for kw in ["code", "math", "algorithm", "debug"]):
             return "specialist"
+        if any(kw in query for kw in ["run", "terminal", "mkdir", "npm", "pip", "shell", "execute"]):
+            return "NVIDIA_NIM" # Route to cloud_planning
         return state["route"]
 
     def _route_after_plan(self, state: AgentState) -> str:

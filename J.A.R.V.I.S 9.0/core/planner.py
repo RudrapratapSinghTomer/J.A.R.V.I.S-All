@@ -15,10 +15,12 @@ class Planner:
         )
         os.makedirs(self.plans_dir, exist_ok=True)
 
-    def generate_plan(self, feature: dict, jarvis_9_state: str):
+    def generate_plan(self, feature: dict, jarvis_9_state: str, stop_event=None):
         """
         Evaluates a feature and generates a plan file in the plans/ directory.
         """
+        if stop_event and stop_event.is_set():
+            return
         # Create a safe filename
         safe_name = "".join(
             [

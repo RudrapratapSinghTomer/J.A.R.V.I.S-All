@@ -32,3 +32,10 @@ class Memory:
 
     def get_all_features(self):
         return self.features
+
+    def is_version_analyzed(self, version_name: str) -> bool:
+        """Checks if a specific version has already been analyzed."""
+        for f in self.features:
+            if f.get("source_version") == version_name:
+                return True
+        return False

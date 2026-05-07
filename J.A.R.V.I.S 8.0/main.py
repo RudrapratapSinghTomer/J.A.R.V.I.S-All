@@ -28,6 +28,13 @@ def main():
     executor = ExecutorLAM()
     vision = VisionVLM()
 
+    # --- Background Monitor ---
+    from core.monitor import SystemMonitor
+    import threading
+    monitor = SystemMonitor()
+    monitor_thread = threading.Thread(target=monitor.start, daemon=True)
+    monitor_thread.start()
+
     # --- Orchestrator (all components wired) ---
     jarvis = Orchestrator(router, mhc_memory, researcher, executor, vision=vision)
 

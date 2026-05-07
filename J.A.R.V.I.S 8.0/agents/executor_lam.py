@@ -41,6 +41,20 @@ class ExecutorLAM:
         "repo",
     ]
 
+    # --- Keywords that signal a terminal/shell action ---
+    SHELL_KEYWORDS = [
+        "run command",
+        "terminal",
+        "mkdir",
+        "npm",
+        "pip",
+        "ls ",
+        "dir ",
+        "shell",
+        "system",
+        "execute command",
+    ]
+
     def __init__(self):
         self.nvidia_key = os.getenv("NVIDIA_API_KEY")
         self.nvidia_model = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-70b-instruct")
@@ -50,13 +64,16 @@ class ExecutorLAM:
     # ------------------------------------------------------------------
     def execute_action(self, query: str) -> str:
         """
-        Entry point. Decides whether to use the git tool or
-        generate + run a Python script.
+        Entry point. Decides whether to use the git tool, terminal tool, 
+        or generate + run a Python script.
         """
         query_lower = query.lower()
 
         if any(kw in query_lower for kw in self.GIT_KEYWORDS):
             return self._handle_git_action(query)
+        
+        if any(kw in query_lower for kw in self.SHELL_KEYWORDS):
+            return self._handle_shell_action(query)
 
         # General case: ask LLM to write a script, then run it
         script = self._generate_script(query)
@@ -223,6 +240,56 @@ class ExecutorLAM:
         )
         return self._call_cloud_llm(prompt, max_tokens=1024)
 
+
+    # ------------------------------------------------------------------
+    # Shell / Terminal actions
+    # ------------------------------------------------------------------
+    def _handle_shell_action(self, query: str) -> str:
+        """
+        Ask the LLM to extract a single shell command from the query, 
+        execute it, and handle errors.
+        """
+        from tools.terminal_ops import run_command
+
+        prompt = (
+            f"You are JARVIS. Extract the single most appropriate shell command to accomplish this task:\n"
+            f"Task: {query}\n\n"
+            "Requirements:\n"
+            "- Output ONLY the raw shell command, no markdown fences.\n"
+            "- Ensure it is safe and compatible with the current OS (Windows).\n"
+        )
+
+        command = self._call_cloud_llm(prompt, max_tokens=128)
+        if not command:
+            return "[Executor] Could not generate a shell command."
+
+        command = command.strip().replace("`", "")
+        print(f"[Executor] Running terminal command: {command}")
+        
+        result = run_command(command)
+        
+        if result["success"]:
+            return f"[Terminal Success]\n{result['stdout']}"
+        else:
+            # P.A.L. self-correction for shell
+            error_info = result["stderr"] or result["stdout"]
+            print(f"[Executor] Command failed, attempting self-correction...\n{error_info}")
+            
+            fix_prompt = (
+                f"The following shell command failed:\n`{command}`\n\n"
+                f"Error:\n{error_info}\n\n"
+                "Provide a fixed shell command. Output ONLY the raw command."
+            )
+            fixed_command = self._call_cloud_llm(fix_prompt, max_tokens=128)
+            if fixed_command:
+                fixed_command = fixed_command.strip().replace("`", "")
+                print(f"[Executor] Retrying with fixed command: {fixed_command}")
+                result2 = run_command(fixed_command)
+                if result2["success"]:
+                    return f"[Terminal Success after fix]\n{result2['stdout']}"
+                return f"[Terminal Error after fix]\n{result2['stderr']}\n{result2['stdout']}"
+            
+            return f"[Terminal Error]\n{result['stderr']}\n{result['stdout']}"
 
     # ------------------------------------------------------------------
     # Helpers

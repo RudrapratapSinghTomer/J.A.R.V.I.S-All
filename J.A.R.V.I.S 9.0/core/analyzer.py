@@ -11,11 +11,12 @@ class Analyzer:
         )
         self.model = "meta/llama-3.1-70b-instruct"  # Fallback mapping for NIM or standard OpenAI compatible path, replace with deepseek-v4-pro if available in catalog
 
-    def analyze_codebase(self, version_name: str, files_dict: dict) -> list:
+    def analyze_codebase(self, version_name: str, files_dict: dict, stop_event=None) -> list:
         """
         Sends the codebase to the NIM API to extract a list of features.
         Returns a list of feature dictionaries.
         """
+        if stop_event and stop_event.is_set(): return []
         code_context = ""
         for filepath, content in files_dict.items():
             code_context += f"\\n\\n--- FILE: {filepath} ---\\n{content}"
