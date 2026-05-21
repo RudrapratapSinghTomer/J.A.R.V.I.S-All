@@ -4,6 +4,14 @@ import base64
 import tempfile
 import yaml
 import requests
+import threading
+import time
+import queue
+import cv2
+import numpy as np
+from PIL import Image
+import mss
+import io
 
 config_path = os.path.join(os.path.dirname(__file__), "..", "config.yaml")
 with open(config_path, "r") as f:
@@ -17,155 +25,186 @@ OLLAMA_URL = (
 VLM_MODEL = config.get("models", {}).get("local", {}).get("vlm", "llama3.2-vision:11b")
 
 
+class WebcamStream(threading.Thread):
+    """Threaded webcam reader."""
+
+    def __init__(self):
+        super().__init__(daemon=True)
+        # Try DirectShow for Windows first (fix for -1072873822)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        if not self.cap.isOpened():
+            print("[Webcam] DirectShow failed, falling back to default MSMF...")
+            self.cap = cv2.VideoCapture(0)
+
+        if self.cap.isOpened():
+            self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimise lag
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        else:
+            print("[Webcam] CRITICAL: Could not open video source.")
+
+        self.frame = None
+        self.running = True
+
+    def run(self):
+        while self.running:
+            if not self.cap.isOpened():
+                time.sleep(1)
+                continue
+            ret, frame = self.cap.read()
+            if ret:
+                self.frame = frame
+            else:
+                # Avoid flooding logs if grab fails temporarily
+                time.sleep(0.5)
+            time.sleep(0.01)
+
+    def read(self):
+        return self.frame
+
+    def stop(self):
+        self.running = False
+        self.cap.release()
+
+
+class ScreenStream(threading.Thread):
+    """Threaded screen reader using MSS."""
+
+    def __init__(self):
+        super().__init__(daemon=True)
+        self.sct = mss.MSS()
+        self.monitor = self.sct.monitors[1]
+        self.frame = None
+        self.running = True
+
+    def run(self):
+        while self.running:
+            screenshot = self.sct.grab(self.monitor)
+            # Convert to numpy array
+            self.frame = np.array(screenshot)
+            time.sleep(0.01)
+
+    def read(self):
+        return self.frame
+
+    def stop(self):
+        self.running = False
+
+
 class VisionVLM:
     """
-    Vision Language Model agent.
-
-    Capabilities:
-    1. process_image(path, prompt)  — analyze a local image file
-    2. capture_screen(prompt)       — capture the current screen and analyze it
-    3. process_image_from_url(url)  — download an image from a URL and analyze it
+    Vision Language Model agent with Threaded Architecture.
     """
 
     def __init__(self):
         self.model = VLM_MODEL
         self.endpoint = f"{OLLAMA_URL}/generate"
 
-    # ------------------------------------------------------------------
-    # Core: send image bytes + prompt to local Ollama VLM
-    # ------------------------------------------------------------------
+        # Initialize background streams
+        self.webcam = WebcamStream()
+        self.screen = ScreenStream()
+
+        # Start streams
+        self.webcam.start()
+        self.screen.start()
+
     def _query_vlm(self, image_bytes: bytes, prompt: str) -> str:
-        """Encode image and call the Cloud VLM first, with Local VLM as fallback."""
-        
-        # Try Cloud Vision (NVIDIA NIM) first - Faster and more reliable
-        print("[VLM] Querying Cloud Vision (NVIDIA NIM)...")
+        """Call NVIDIA NIM (Cloud) or local VLM (Ollama)."""
         nvidia_key = os.getenv("NVIDIA_API_KEY")
         if nvidia_key:
             try:
                 from openai import OpenAI
-                client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=nvidia_key)
-                cloud_model = "meta/llama-3.2-90b-vision-instruct"
-                
+
+                client = OpenAI(
+                    base_url="https://integrate.api.nvidia.com/v1", api_key=nvidia_key
+                )
                 encoded = base64.b64encode(image_bytes).decode("utf-8")
-                messages = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded}"}}
-                        ]
-                    }
-                ]
-                
                 completion = client.chat.completions.create(
-                    model=cloud_model,
-                    messages=messages,
+                    model="meta/llama-3.2-90b-vision-instruct",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/png;base64,{encoded}"
+                                    },
+                                },
+                            ],
+                        }
+                    ],
                     max_tokens=1024,
-                    timeout=60 # Faster timeout for cloud
                 )
                 return completion.choices[0].message.content
             except Exception as e:
-                print(f"[VLM] Cloud Vision failed: {e}. Falling back to Local VLM...")
-        else:
-            print("[VLM] NVIDIA_API_KEY missing. Falling back to Local VLM...")
+                print(f"[VLM] Cloud Vision failed: {e}")
 
-        # Fallback: Local VLM (Ollama)
+        # Local Fallback
         encoded = base64.b64encode(image_bytes).decode("utf-8")
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "images": [encoded],
-            "stream": False,
-        }
         try:
-            print(f"[VLM] Querying local model '{self.model}'...")
-            response = requests.post(self.endpoint, json=payload, timeout=300)
-            response.raise_for_status()
-            return response.json().get("response", "[VLM] No response from local model.")
+            response = requests.post(
+                self.endpoint,
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "images": [encoded],
+                    "stream": False,
+                },
+                timeout=120,
+            )
+            return response.json().get("response", "No response.")
         except Exception as e:
-            return f"[VLM] All vision models failed: {e}"
+            return f"Vision error: {e}"
 
-    # ------------------------------------------------------------------
-    # Feature 1: Analyze a local image file
-    # ------------------------------------------------------------------
-    def process_image(self, image_path: str, prompt: str = "Describe this image in detail.") -> str:
-        """
-        Sends a local image file and a prompt to the local VLM (llama3.2-vision) via Ollama.
-        Returns a text description.
-        """
-        if not os.path.exists(image_path):
-            return f"[VLM] Error: Image not found at '{image_path}'"
-        try:
-            with open(image_path, "rb") as f:
-                image_bytes = f.read()
-            return self._query_vlm(image_bytes, prompt)
-        except Exception as e:
-            return f"[VLM] Error reading image file: {e}"
+    def capture_dual_vision(
+        self, prompt: str = "Describe everything in this view (Screen + Webcam PiP)."
+    ) -> str:
+        """Merges screen and webcam into a single frame for analysis."""
+        # Wait up to 3 seconds for screen frame
+        for _ in range(30):
+            screen_frame = self.screen.read()
+            if screen_frame is not None:
+                break
+            time.sleep(0.1)
 
-    # ------------------------------------------------------------------
-    # Feature 2: Capture the screen and analyze it
-    # ------------------------------------------------------------------
-    def capture_screen(self, prompt: str = "Describe everything you see on this screen in detail. Identify all open applications, text, and relevant information.") -> str:
-        """
-        Takes a full-screen screenshot using 'mss', converts it to PNG bytes,
-        and sends it to the local VLM for analysis.
-        """
-        try:
-            import mss
-            import mss.tools
-            from PIL import Image
-            import io
+        # Wait up to 2 seconds for webcam frame if it's currently None
+        webcam_frame = self.webcam.read()
+        if webcam_frame is None:
+            for _ in range(20):
+                webcam_frame = self.webcam.read()
+                if webcam_frame is not None:
+                    break
+                time.sleep(0.1)
 
-            with mss.MSS() as sct:
-                # Capture the primary monitor
-                monitor = sct.monitors[1]
-                screenshot = sct.grab(monitor)
+        if screen_frame is None:
+            return "[VLM] Screen capture not ready. Ensure monitor is active."
 
-                # Convert to PIL Image then to PNG bytes
-                img = Image.frombytes("RGB", screenshot.size, screenshot.bgra, "raw", "BGRX")
-                buf = io.BytesIO()
-                img.save(buf, format="PNG")
-                image_bytes = buf.getvalue()
+        # Convert BGRA to RGB (MSS returns BGRA)
+        img_screen = cv2.cvtColor(screen_frame, cv2.COLOR_BGRA2BGR)
 
-            print(f"[VLM] Screen captured ({len(image_bytes) // 1024} KB). Analyzing...")
-            return self._query_vlm(image_bytes, prompt)
+        if webcam_frame is not None:
+            # Resize webcam to PiP size (e.g., 1/4 of screen width)
+            h_s, w_s = img_screen.shape[:2]
+            w_w = w_s // 4
+            h_w = int(webcam_frame.shape[0] * (w_w / webcam_frame.shape[1]))
+            pip_webcam = cv2.resize(webcam_frame, (w_w, h_w))
 
-        except ImportError:
-            return "[VLM] Screen capture requires 'mss' and 'Pillow'. Run: pip install mss Pillow"
-        except Exception as e:
-            return f"[VLM] Screen capture failed: {e}"
+            # Place in bottom-right corner
+            img_screen[h_s - h_w - 10 : h_s - 10, w_s - w_w - 10 : w_s - 10] = (
+                pip_webcam
+            )
 
-    # ------------------------------------------------------------------
-    # Feature 3: Analyze an image from a URL
-    # ------------------------------------------------------------------
-    def process_image_from_url(self, url: str, prompt: str = "Describe this image in detail.") -> str:
-        """
-        Downloads an image from the given URL and sends it to the VLM.
-        """
-        try:
-            headers = {"User-Agent": "Mozilla/5.0"}
-            resp = requests.get(url, headers=headers, timeout=20)
-            resp.raise_for_status()
-            image_bytes = resp.content
-            print(f"[VLM] Downloaded image from URL ({len(image_bytes) // 1024} KB). Analyzing...")
-            return self._query_vlm(image_bytes, prompt)
-        except Exception as e:
-            return f"[VLM] Failed to download or process image from URL: {e}"
+        # Encode to PNG
+        _, buffer = cv2.imencode(".png", img_screen)
+        return self._query_vlm(buffer.tobytes(), prompt)
 
-    # ------------------------------------------------------------------
-    # Convenience: auto-detect what the user wants
-    # ------------------------------------------------------------------
-    def analyze(self, source: str, prompt: str = "Describe what you see in detail.") -> str:
-        """
-        Smart dispatcher:
-        - 'screen' → capture the desktop
-        - http(s)://... with image extension → download and analyze
-        - local file path → read and analyze
-        """
-        src_lower = source.strip().lower()
-        if src_lower in ("screen", "[screen]", "screenshot", "desktop"):
-            return self.capture_screen(prompt)
-        elif src_lower.startswith("http://") or src_lower.startswith("https://"):
-            return self.process_image_from_url(source, prompt)
-        else:
-            return self.process_image(source, prompt)
+    def analyze(self, source: str, prompt: str = "Describe what you see.") -> str:
+        if source.lower() in ["screen", "dual", "live"]:
+            return self.capture_dual_vision(prompt)
+        return f"[VLM] Unsupported source: {source}"
+
+    def stop(self):
+        self.webcam.stop()
+        self.screen.stop()

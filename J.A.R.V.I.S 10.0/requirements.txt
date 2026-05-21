@@ -1,0 +1,13 @@
+langgraph
+langchain
+openai
+requests
+beautifulsoup4
+pyyaml
+python-dotenv
+docker
+huggingface_hub
+aiohttp
+chromadb
+mss
+Pillow

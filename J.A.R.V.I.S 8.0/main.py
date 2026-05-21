@@ -13,6 +13,8 @@ from core.orchestrator import Orchestrator
 from agents.researcher import AutoResearcher
 from agents.executor_lam import ExecutorLAM
 from agents.vision_vlm import VisionVLM
+from core.consciousness import BackgroundConsciousness
+import threading
 
 
 def main():
@@ -28,9 +30,15 @@ def main():
     executor = ExecutorLAM()
     vision = VisionVLM()
 
+    # --- Background Consciousness ---
+    stop_event = threading.Event()
+    consciousness = BackgroundConsciousness(stop_event, mhc_memory)
+    consciousness_thread = threading.Thread(target=consciousness.start, daemon=True)
+    consciousness_thread.start()
+
     # --- Background Monitor ---
     from core.monitor import SystemMonitor
-    import threading
+
     monitor = SystemMonitor()
     monitor_thread = threading.Thread(target=monitor.start, daemon=True)
     monitor_thread.start()
@@ -42,7 +50,7 @@ def main():
     print("  J.A.R.V.I.S 8.0 — Modular Agentic Operating System")
     print("=" * 60)
     print("  Commands:")
-    print("    [screen] <question>       — Analyze your live screen")
+    print("    [screen] <question>       — Analyze your live screen + webcam (PiP)")
     print("    [image: <path/url>] <q>   — Analyze a specific image")
     print("    research <topic>          — Deep recursive web research")
     print("    exit / quit               — Shut down")
@@ -52,13 +60,19 @@ def main():
 
     while True:
         try:
+            # User is about to type, pause background consciousness to free resources
+            consciousness.pause()
+
             query = input(f"[{user_id}]> ").strip()
 
             if query.lower() in ["exit", "quit"]:
                 print("[JARVIS] Shutting down. Goodbye.")
+                stop_event.set()
+                vision.stop()  # Clean up vision threads
                 break
 
             if not query:
+                consciousness.resume()
                 continue
 
             print("\n[Jarvis Processing...]\n")
@@ -66,11 +80,17 @@ def main():
 
             print(f"[JARVIS]> {response}\n")
 
+            # Action complete, resume background evolution
+            consciousness.resume()
+
         except KeyboardInterrupt:
             print("\n[JARVIS] Interrupted. Shutting down.")
+            stop_event.set()
+            vision.stop()
             break
         except Exception as e:
             print(f"\n[System Error] {e}\n")
+            consciousness.resume()
 
 
 if __name__ == "__main__":

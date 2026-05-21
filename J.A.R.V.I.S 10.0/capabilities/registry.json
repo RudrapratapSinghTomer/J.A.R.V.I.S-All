@@ -1,0 +1,11 @@
+{
+  "capabilities": {
+    "speech_synthesis": {
+      "name": "Speech Synthesis",
+      "description": "Add Speech Synthesis support into J.A.R.V.I.S codebase",
+      "version": "1.0.0",
+      "huggingface_model": "huggingface/Speech Synthesis-model",
+      "entrypoint": "capabilities/plugins/speech_synthesis_plugin.py"
+    }
+  }
+}

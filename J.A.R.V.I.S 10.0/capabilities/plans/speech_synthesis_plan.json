@@ -1,0 +1,17 @@
+{
+  "capability": "Speech Synthesis",
+  "goal": "Add Speech Synthesis support into J.A.R.V.I.S codebase",
+  "huggingface_model": "huggingface/Speech Synthesis-model",
+  "github_repository": "github/user/Speech Synthesis",
+  "dependencies": [
+    "transformers",
+    "torch"
+  ],
+  "checklist": [
+    "Install pip dependencies inside Docker sandbox",
+    "Write capabilities/plugins/Speech Synthesis_plugin.py wrapper",
+    "Test the wrapper on dummy input inside Docker",
+    "Register Speech Synthesis inside capabilities/registry.json"
+  ],
+  "status": "COMPLETED"
+}

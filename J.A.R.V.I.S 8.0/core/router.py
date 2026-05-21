@@ -2,6 +2,8 @@ import os
 import yaml
 import requests
 
+import time
+
 config_path = os.path.join(os.path.dirname(__file__), "..", "config.yaml")
 with open(config_path, "r") as f:
     config = yaml.safe_load(f)
@@ -16,51 +18,71 @@ SLM_MODEL = config.get("models", {}).get("local", {}).get("slm", "qwen2.5:7b")
 
 
 class LLMRouter:
+    _local_offline_until = 0
+
     def __init__(self):
         self.threshold = THRESHOLD
 
-    def get_complexity_score(self, query: str) -> float:
+    def analyze_intent(self, query: str) -> dict:
         """
-        Uses the local SLM to determine if the query is simple (e.g., 'hello', 'time')
-        or complex (requires deep reasoning, planning, coding).
-        Returns a float between 0.0 and 1.0.
+        Uses the local SLM to determine:
+        1. Complexity (0.0 to 1.0)
+        2. Intent (VISION, GENERAL, CODE)
+        Returns a dict.
         """
         prompt = (
-            "Analyze the following query and rate its complexity from 0.0 to 1.0.\n"
-            "0.0 means very simple (e.g., greetings, asking the time).\n"
-            "1.0 means highly complex (e.g., writing code, complex reasoning, deep research).\n"
-            "Reply with ONLY the floating point number.\n\n"
-            f"Query: '{query}'"
+            "Analyze the following query and provide a JSON response with two fields:\n"
+            "1. 'complexity': A float from 0.0 (simple) to 1.0 (complex).\n"
+            "2. 'intent': One of ['VISION', 'GENERAL', 'CODE'].\n"
+            "   Use 'VISION' if the user wants you to see, look, analyze the screen, room, or environment.\n"
+            "   Use 'CODE' if the user is asking for specific coding help or specialist knowledge.\n"
+            "   Use 'GENERAL' for everything else.\n\n"
+            f"Query: '{query}'\n"
+            "JSON ONLY:"
         )
+
+        # Circuit Breaker: Skip if recently failed
+        if time.time() < LLMRouter._local_offline_until:
+            return {"complexity": 1.0, "intent": "GENERAL"}
 
         try:
             response = requests.post(
                 f"{OLLAMA_URL}/generate",
-                json={"model": SLM_MODEL, "prompt": prompt, "stream": False},
-                timeout=60,
+                json={
+                    "model": SLM_MODEL,
+                    "prompt": prompt,
+                    "stream": False,
+                    "format": "json",
+                },
+                timeout=15, # Increased to 15s to allow for model loading
             )
             response.raise_for_status()
-            score_text = response.json().get("response", "1.0").strip()
+            import json
 
-            # Extract float from response if model gets chatty
-            import re
-
-            match = re.search(r"0\.[0-9]+|1\.0", score_text)
-            if match:
-                score = float(match.group(0))
-            else:
-                score = 1.0  # Default to cloud if unsure
-
-            return min(max(score, 0.0), 1.0)
+            data = json.loads(response.json().get("response", "{}"))
+            return {
+                "complexity": float(data.get("complexity", 1.0)),
+                "intent": data.get("intent", "GENERAL").upper(),
+            }
         except Exception as e:
-            print(f"[Router] Error communicating with local SLM: {e}")
-            return 1.0  # Default to cloud on failure to ensure capability
+            print(
+                f"[Router] Local SLM unavailable or timeout ({e}). Using heuristic fallback."
+            )
+            # Heuristic fallback for intent
+            intent = "GENERAL"
+            vision_indicators = ["see", "look", "analyse", "screen", "room", "camera", "webcam"]
+            if any(kw in query.lower() for kw in vision_indicators):
+                intent = "VISION"
+            
+            LLMRouter._local_offline_until = time.time() + 60 # Reduce failover to 1 min for faster recovery
+            return {"complexity": 1.0, "intent": intent}
 
-    def route(self, query: str) -> str:
-        """Returns 'NVIDIA_NIM' or 'OLLAMA' based on query complexity."""
-        score = self.get_complexity_score(query)
-        print(f"[Router] Query complexity score: {score}")
-        if score > self.threshold:
-            return "NVIDIA_NIM"
-        else:
-            return "OLLAMA"
+    def route(self, query: str) -> dict:
+        """Returns a dict with 'provider' (NVIDIA_NIM/OLLAMA) and 'intent'."""
+        analysis = self.analyze_intent(query)
+        print(f"[Router] Analysis: {analysis}")
+
+        provider = (
+            "NVIDIA_NIM" if analysis["complexity"] > self.threshold else "OLLAMA"
+        )
+        return {"provider": provider, "intent": analysis["intent"]}

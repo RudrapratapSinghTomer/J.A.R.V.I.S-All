@@ -1,20 +1,75 @@
+# ==========================================
+# J.A.R.V.I.S Global Monorepo Gitignore
+# ==========================================
+
+# --- Environments & Secrets ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+**/.env.*
+.venv/
+venv/
+env/
+ENV/
+**/.venv/
+**/venv/
+**/env/
+
+# --- Python Compiled & Caching ---
 __pycache__/
 *.py[cod]
 *$py.class
-.env
-.venv
-env/
-venv/
+**/__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+**/.pytest_cache/
+**/.mypy_cache/
+
+# --- Package & Build Outputs ---
 node_modules/
 dist/
 build/
+out/
+target/
+**/node_modules/
+**/dist/
+**/build/
+**/out/
+
+# --- IDEs & System ---
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+**/.vscode/
+**/.idea/
+**/.DS_Store
+
+# --- Logs, Dumps & Temp Files ---
 *.log
 *.tmp
-# Ignore Jarvis data
-J.A.R.V.I.S 8.0/data/
-J.A.R.V.I.S 8.0/test_output.txt
-# Ignore scratch directory
+*.temp
+**/*.log
+**/*.tmp
+**/*.temp
+**/test_output.txt
+
+# --- Jarvis Scratch & Local Demos ---
 scratch/
 **/scratch/
+output.csv
+
+# --- Jarvis-Specific Version Exclusions ---
+# J.A.R.V.I.S 8.0
+J.A.R.V.I.S 8.0/data/
+
+# J.A.R.V.I.S 10.0 Dynamic Episodic Data & Model Weights
+J.A.R.V.I.S 10.0/memory/ltm_*.json
+J.A.R.V.I.S 10.0/capabilities/plugins/__pycache__/
+Dockerfile
+config.yaml
+webcam_capture.jpg
