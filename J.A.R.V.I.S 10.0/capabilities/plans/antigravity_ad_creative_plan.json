@@ -1,0 +1,14 @@
+{
+  "capability": "ad-creative",
+  "goal": "Create, iterate, and scale paid ad creative for Google Ads, Meta, LinkedIn, TikTok, and similar platforms. Use when generating headlines, descriptions, primary text, or large sets of ad variations for testing and performance optimization.",
+  "source": "antigravity",
+  "skill_path": "C:\\Users\\developer\\Desktop\\J.A.R.V.I.S All\\J.A.R.V.I.S 10.0\\external_skills\\antigravity\\skills\\ad-creative",
+  "dependencies": [],
+  "checklist": [
+    "Install pip dependencies inside Docker sandbox",
+    "Write capabilities/plugins/ad_creative_plugin.py wrapper",
+    "Test the wrapper on dummy input inside Docker",
+    "Register ad-creative inside capabilities/registry.json"
+  ],
+  "status": "COMPLETED"
+}

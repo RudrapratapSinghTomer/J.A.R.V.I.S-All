@@ -119,5 +119,19 @@ class CLIEngine:
             response_text = completion.choices[0].message.content
             return json.loads(response_text)
         except Exception as e:
+            # Retry without response_format in case the API doesn't support it
+            if "response_format" in str(e).lower() or "unsupported" in str(e).lower():
+                try:
+                    import json
+                    completion = self.llm_client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.1
+                    )
+                    response_text = completion.choices[0].message.content
+                    return json.loads(response_text)
+                except Exception as retry_e:
+                    print(f"[CLI Error] LLM Correction retry also failed: {retry_e}")
+                    return {}
             print(f"[CLI Error] LLM Correction call failed: {e}")
             return {}

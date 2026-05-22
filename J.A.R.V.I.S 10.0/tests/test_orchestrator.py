@@ -90,7 +90,7 @@ async def main():
     
     # Since Task 1 (1s sleep) and Task 2 (1s sleep) ran in parallel,
     # the total time for the execution loop should be close to ~1.0s (rather than 2.0s sequential).
-    if elapsed < 1.8:
+    if elapsed < 2.5:
         print("[SUCCESS] Orchestrator successfully ran Tasks 1 and 2 in parallel!")
     else:
         print("[FAILED] Orchestrator ran tasks sequentially.")

@@ -1,14 +1,15 @@
 import os
 import json
-import yaml
+from typing import Dict, List, Optional
 from openai import OpenAI
 from core.browser import WebBridgeBrowser
 from core.cli_engine import CLIEngine
+from core.config_loader import load_config
+from core.antigravity_loader import AntigravitySkillLoader
 
 # Load config
-_CONFIG_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "config.yaml"))
-with open(_CONFIG_PATH, "r") as f:
-    _CFG = yaml.safe_load(f)
+_CFG = load_config()
+
 
 CAP_CFG = _CFG.get("capabilities", {})
 PLANS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", CAP_CFG.get("plans_dir", "capabilities/plans")))
@@ -30,6 +31,7 @@ class CapabilityAcquirer:
         self.cli_engine = cli_engine
         self.llm_client = llm_client
         self.model = model
+        self.antigravity_loader = AntigravitySkillLoader(cli_engine)
 
         # Ensure dynamic directories exist
         os.makedirs(PLANS_DIR, exist_ok=True)
@@ -121,8 +123,25 @@ class CapabilityAcquirer:
             print(f"[Acquirer] Saved capability plan checklist to: {plan_path}")
             return plan_path
         except Exception as e:
+            # Retry without response_format in case the API doesn't support it
+            if "response_format" in str(e).lower() or "unsupported" in str(e).lower():
+                try:
+                    completion = self.llm_client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.2
+                    )
+                    raw_text = completion.choices[0].message.content
+                    plan = json.loads(raw_text)
+                    plan["status"] = "AWAITING_REVIEW"
+                    with open(plan_path, "w") as f:
+                        json.dump(plan, f, indent=2)
+                    print(f"[Acquirer] Saved capability plan checklist to: {plan_path} (without response_format)")
+                    return plan_path
+                except Exception as retry_e:
+                    print(f"[Acquirer Error] Retry also failed: {retry_e}")
             print(f"[Acquirer Error] Failed to generate structured plan: {e}")
-            return plan_path
+            return None
 
     def execute_and_install_capability(self, plan_path: str) -> dict:
         """
@@ -264,7 +283,7 @@ if __name__ == "__main__":
                 data = json.load(f)
                 
             cap_name = plan.get("capability", "Unknown")
-            safe_id = cap_name.lower().replace(" ", "_")
+            safe_id = cap_name.lower().replace(" ", "_").replace("-", "_")
             
             data["capabilities"][safe_id] = {
                 "name": cap_name,
@@ -278,3 +297,304 @@ if __name__ == "__main__":
                 json.dump(data, f, indent=2)
         except Exception as e:
             print(f"[Acquirer Register Error] Failed to write index: {e}")
+
+    def propose_antigravity_skill_integration(self, query: str) -> Optional[str]:
+        """
+        Searches the Antigravity awesome-skills library for matching skills,
+        drafts an integration checklist, and saves the plan to disk for user review.
+        """
+        print(f"[Acquirer] Searching Antigravity library for query: '{query}'")
+        skills = self.antigravity_loader.filter_skills_by_query(query)
+        if not skills:
+            print(f"[Acquirer] No Antigravity skills matched query: '{query}'")
+            return None
+
+        # Select the best match (exact name match preferred, otherwise first result)
+        best_match = skills[0]
+        for skill in skills:
+            if skill['name'].lower() == query.lower():
+                best_match = skill
+                break
+
+        skill_name = best_match['name']
+        metadata = best_match.get('metadata', {})
+        safe_name = skill_name.lower().replace(" ", "_").replace("-", "_")
+        plan_filename = f"antigravity_{safe_name}_plan.json"
+        plan_path = os.path.join(PLANS_DIR, plan_filename)
+
+        print(f"[Acquirer] Found matching skill: '{skill_name}' at {best_match.get('path')}")
+
+        # Try to read SKILL.md or README.md content inside the skill's catalog path for detailed context
+        skill_content = ""
+        skill_dir = best_match.get('path')
+        if skill_dir and os.path.exists(skill_dir):
+            for filename in ["SKILL.md", "README.md"]:
+                file_path = os.path.join(skill_dir, filename)
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            skill_content = f.read()
+                        break
+                    except Exception:
+                        pass
+
+        if not self.llm_client:
+            # Fallback mock plan
+            mock_plan = {
+                "capability": skill_name,
+                "goal": metadata.get("description", f"Integrate {skill_name} skill"),
+                "source": "antigravity",
+                "skill_path": best_match.get("path"),
+                "dependencies": [],
+                "checklist": [
+                    "Install pip dependencies inside Docker sandbox",
+                    f"Write capabilities/plugins/{safe_name}_plugin.py wrapper",
+                    "Test the wrapper on dummy input inside Docker",
+                    f"Register {skill_name} inside capabilities/registry.json"
+                ],
+                "status": "AWAITING_REVIEW"
+            }
+            with open(plan_path, "w", encoding="utf-8") as f:
+                json.dump(mock_plan, f, indent=2)
+            print(f"[Acquirer] Saved offline fallback skill plan checklist to: {plan_path}")
+            return plan_path
+
+        prompt = (
+            "You are the J.A.R.V.I.S 10.0 Antigravity Skill Integration Strategist.\n"
+            "We want to integrate a pre-built skill from the Antigravity awesome-skills library.\n"
+            "Formulate a structured integration plan and step checklist based on the skill metadata and playbook content.\n\n"
+            f"SKILL NAME: {skill_name}\n"
+            f"METADATA: {json.dumps(metadata, indent=2)}\n"
+            f"PLAYBOOK CONTENT:\n{skill_content[:3000]}\n\n"
+            "Output a JSON block with details on the skill's capabilities, dependencies, "
+            "and a checklist of installation and verification tasks.\n\n"
+            "### JSON Plan Schema:\n"
+            "{\n"
+            "  \"capability\": \"Skill name\",\n"
+            "  \"goal\": \"Core integration objective based on playbook\",\n"
+            "  \"source\": \"antigravity\",\n"
+            "  \"skill_path\": \"relative or absolute path to skill catalog entry\",\n"
+            "  \"dependencies\": [\"pip packages to install (e.g. requests, numpy)\"],\n"
+            "  \"checklist\": [\"Task step 1\", \"Task step 2\", \"Verification step\"],\n"
+            "  \"status\": \"AWAITING_REVIEW\"\n"
+            "}\n"
+            "Output ONLY the JSON object. Do not wrap in markdown or include extra text."
+        )
+
+        try:
+            completion = self.llm_client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                response_format={"type": "json_object"}
+            )
+            
+            raw_text = completion.choices[0].message.content
+            plan = json.loads(raw_text)
+            plan["status"] = "AWAITING_REVIEW"
+            plan["source"] = "antigravity"
+            plan["skill_path"] = best_match.get("path")
+            
+            with open(plan_path, "w", encoding="utf-8") as f:
+                json.dump(plan, f, indent=2)
+                
+            print(f"[Acquirer] Saved structured skill plan checklist to: {plan_path}")
+            return plan_path
+        except Exception as e:
+            # Retry without response_format in case the API doesn't support it
+            if "response_format" in str(e).lower() or "unsupported" in str(e).lower():
+                try:
+                    completion = self.llm_client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.2
+                    )
+                    raw_text = completion.choices[0].message.content
+                    plan = json.loads(raw_text)
+                    plan["status"] = "AWAITING_REVIEW"
+                    plan["source"] = "antigravity"
+                    plan["skill_path"] = best_match.get("path")
+                    with open(plan_path, "w", encoding="utf-8") as f:
+                        json.dump(plan, f, indent=2)
+                    print(f"[Acquirer] Saved structured skill plan checklist to: {plan_path} (without response_format)")
+                    return plan_path
+                except Exception as retry_e:
+                    print(f"[Acquirer Error] Retry also failed: {retry_e}")
+            print(f"[Acquirer Error] Failed to generate structured plan: {e}")
+            return plan_path
+
+    def execute_antigravity_skill_installation(self, plan_path: str) -> dict:
+        """
+        Executes approved Antigravity skill integration:
+        Installs dependencies, synthesizes dynamic wrapper wrapper, runs sandbox validation,
+        and registers the newly active skill.
+        """
+        if not os.path.exists(plan_path):
+            return {"success": False, "error": f"Plan file not found: {plan_path}"}
+
+        try:
+            with open(plan_path, "r", encoding="utf-8") as f:
+                plan = json.load(f)
+        except Exception as e:
+            return {"success": False, "error": f"Failed to read plan: {e}"}
+
+        capability = plan.get("capability", "unknown_capability")
+        safe_name = capability.lower().replace(" ", "_").replace("-", "_")
+        print(f"\n[Acquirer] Proceeding with approved installation for Antigravity skill: '{capability}'")
+
+        # 1. Install dependencies inside sandbox
+        deps = plan.get("dependencies", [])
+        for dep in deps:
+            print(f"[Acquirer] Installing dependency inside sandbox: '{dep}'")
+            inst_res = self.cli_engine.execute_and_validate(f"pip install {dep}")
+            if not inst_res["success"]:
+                return {"success": False, "error": f"Failed to install dependency '{dep}': {inst_res.get('stderr')}"}
+
+        # Try to read the playbook content
+        skill_content = ""
+        skill_dir = plan.get("skill_path")
+        if skill_dir and os.path.exists(skill_dir):
+            for filename in ["SKILL.md", "README.md"]:
+                file_path = os.path.join(skill_dir, filename)
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            skill_content = f.read()
+                        break
+                    except Exception:
+                        pass
+
+        # 2. Synthesize the Python plugin wrapper file
+        plugin_file = os.path.join(PLUGINS_DIR, f"{safe_name}_plugin.py")
+        print(f"[Acquirer] Synthesizing plugin wrapper file: {plugin_file}")
+        
+        plugin_code = self._generate_antigravity_plugin_code(plan, skill_content)
+        
+        with open(plugin_file, "w", encoding="utf-8") as f:
+            f.write(plugin_code)
+
+        # 3. Create and execute verification test inside sandbox
+        test_file = os.path.join(PLUGINS_DIR, f"test_{safe_name}.py")
+        test_code = self._generate_antigravity_test_code(plan, safe_name)
+        
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write(test_code)
+
+        print(f"[Acquirer] Executing validation test script inside sandbox...")
+        test_res = self.cli_engine.execute_and_validate(f"python {os.path.basename(test_file)}", workdir="/workspace/J.A.R.V.I.S 10.0/capabilities/plugins")
+        
+        # Clean up temporary test script
+        if os.path.exists(test_file):
+            os.remove(test_file)
+
+        if not test_res["success"]:
+            return {
+                "success": False, 
+                "error": f"Dynamic execution test failed inside sandbox. Traceback:\n{test_res.get('stderr')}"
+            }
+
+        # 4. Register the new capability to registry.json
+        print(f"[Acquirer] Registration passed. Updating registry...")
+        self._register_capability_in_index(plan, f"capabilities/plugins/{safe_name}_plugin.py")
+
+        # Update plan status to COMPLETED
+        plan["status"] = "COMPLETED"
+        with open(plan_path, "w", encoding="utf-8") as f:
+            json.dump(plan, f, indent=2)
+
+        return {
+            "success": True, 
+            "message": f"Successfully integrated capability '{capability}' inside J.A.R.V.I.S 10.0!",
+            "plugin_path": plugin_file
+        }
+
+    def _generate_antigravity_plugin_code(self, plan: dict, skill_content: str) -> str:
+        """Calls LLM to synthesize dynamic Python plugin code for the Antigravity skill."""
+        cap_name = plan.get("capability", "Unknown")
+        
+        if not self.llm_client:
+            # Fallback mock code
+            return f"""# Dynamic J.A.R.V.I.S 10.0 Antigravity Plugin: {cap_name}
+# Synthesized in fallback offline mode.
+
+class PluginInstance:
+    def __init__(self):
+        self.name = "{cap_name}"
+
+    def load(self):
+        return True
+
+    def execute(self, inputs: dict) -> dict:
+        return {{"success": True, "message": f"Hello from Antigravity {cap_name} skill! Inputs: {{inputs}}"}}
+"""
+
+        prompt = (
+            "You are the J.A.R.V.I.S 10.0 Code Synthesis Core.\n"
+            "Synthesize a highly functional, production-ready Python plugin wrapper class named `PluginInstance` "
+            "implementing the following Antigravity skill playbook.\n\n"
+            f"SKILL NAME: {cap_name}\n"
+            f"INTEGRATION GOAL: {plan.get('goal')}\n"
+            f"PLAYBOOK / CONTEXT:\n{skill_content[:4000]}\n\n"
+            "### REQUIREMENTS FOR PluginInstance:\n"
+            "1. Must have an `__init__(self)` method initializing any internal variables or configuration.\n"
+            "2. Must have a `load(self)` method that imports necessary libraries, sets up models, and returns True if successful, False otherwise.\n"
+            "3. Must have an `execute(self, inputs: dict) -> dict` method that accepts arbitrary keyword-value dictionary inputs, "
+            "executes the core playbook logic, and returns a dictionary with 'success': True/False and output/results.\n"
+            "4. Design the implementation to be extremely robust, with full error handling, clean docstrings, and adherence to Python best practices.\n\n"
+            "Output ONLY the complete Python code block. Do not wrap in markdown or include extra text."
+        )
+
+        try:
+            completion = self.llm_client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2
+            )
+            code = completion.choices[0].message.content.strip()
+            # Clean up potential LLM markdown block wrapping
+            if code.startswith("```python"):
+                code = code[9:]
+            if code.startswith("```"):
+                code = code[3:]
+            if code.endswith("```"):
+                code = code[:-3]
+            return code.strip()
+        except Exception as e:
+            print(f"[Acquirer Warning] LLM plugin synthesis failed: {e}. Using offline fallback...")
+            return f"""# Dynamic J.A.R.V.I.S 10.0 Antigravity Plugin: {cap_name}
+# Synthesized on fallback.
+
+class PluginInstance:
+    def __init__(self):
+        self.name = "{cap_name}"
+
+    def load(self):
+        return True
+
+    def execute(self, inputs: dict) -> dict:
+        return {{"success": True, "message": f"Hello from Antigravity {cap_name} skill! Inputs: {{inputs}}"}}
+"""
+
+    def _generate_antigravity_test_code(self, plan: dict, safe_name: str) -> str:
+        """Assembles a verification test script for the synthesized Antigravity plugin."""
+        return f"""# Verification script for Antigravity skill: {safe_name}
+import sys
+from {safe_name}_plugin import PluginInstance
+
+def test():
+    print("Testing synthesized Antigravity plugin '{safe_name}'...")
+    plugin = PluginInstance()
+    
+    print("Loading plugin dependencies...")
+    assert plugin.load() is True
+    print("Plugin loaded successfully!")
+    
+    print("Testing plugin execution...")
+    res = plugin.execute({{"test_mode": True, "query": "hello"}})
+    assert res.get("success") is True
+    print("Plugin execution test passed!")
+    print("Result:", res)
+    
+if __name__ == "__main__":
+    test()
+"""

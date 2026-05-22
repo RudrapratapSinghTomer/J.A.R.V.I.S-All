@@ -70,6 +70,22 @@ J.A.R.V.I.S 8.0/data/
 # J.A.R.V.I.S 10.0 Dynamic Episodic Data & Model Weights
 J.A.R.V.I.S 10.0/memory/ltm_*.json
 J.A.R.V.I.S 10.0/capabilities/plugins/__pycache__/
+J.A.R.V.I.S 10.0/capabilities/screenshots/
+J.A.R.V.I.S 10.0/capabilities/pdf/
+
+# --- Local YAML Config & Compose Overrides ---
+*.local.yaml
+*.local.yml
+*.override.yaml
+*.override.yml
+**/config.local.yaml
+**/config.local.yml
+**/docker-compose.override.yml
+**/docker-compose.override.yaml
+**/.docker/
+**/*.docker.log
+**/external_skills/antigravity/
+
 Dockerfile
 config.yaml
-webcam_capture.jpg
+*.jpg

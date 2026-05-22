@@ -1,13 +1,12 @@
 import os
 import sys
-import yaml
 import docker
 import subprocess
+from core.config_loader import load_config
 
 # Load config
-_CONFIG_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "config.yaml"))
-with open(_CONFIG_PATH, "r") as f:
-    _CFG = yaml.safe_load(f)
+_CFG = load_config()
+
 
 DOCKER_CFG = _CFG.get("docker", {})
 IMAGE_NAME = DOCKER_CFG.get("sandbox_image", "jarvis-sandbox:latest")
@@ -25,8 +24,12 @@ class DockerSandbox:
             # Ping to confirm Docker daemon is responsive
             self.client.ping()
         except Exception as e:
-            print(f"[Sandbox Warning] Docker offline or unavailable: {e}")
-            print("[Sandbox Info] Activating safe local subprocess execution fallback.")
+            error_str = str(e)
+            if "CreateFile" in error_str or "FileNotFoundError" in error_str:
+                print("[Sandbox Info] Docker not detected locally. Activating safe subprocess execution fallback.")
+            else:
+                print(f"[Sandbox Warning] Docker offline or unavailable: {error_str}")
+                print("[Sandbox Info] Activating safe local subprocess execution fallback.")
             self.client = None
             self.is_fallback_mode = True
             
@@ -230,8 +233,17 @@ class DockerSandbox:
                 caps["pip_available"] = lines[4].lower() == "true"
         
         # Probe for CUDA / GPU support
-        gpu_probe = "import sys; c=False; try: import torch; c=torch.cuda.is_available() except: pass; print(c)"
-        gpu_res = self.execute_command(f'{py_exe} -c "{gpu_probe}"')
+        gpu_probe_script = (
+            "import sys\n"
+            "c = False\n"
+            "try:\n"
+            "    import torch\n"
+            "    c = torch.cuda.is_available()\n"
+            "except:\n"
+            "    pass\n"
+            "print(c)"
+        )
+        gpu_res = self.execute_command(f"{py_exe} -c \"{gpu_probe_script}\"")
         if gpu_res["success"] and "true" in gpu_res["stdout"].lower():
             caps["gpu_available"] = True
         else:

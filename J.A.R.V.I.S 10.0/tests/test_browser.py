@@ -8,6 +8,7 @@ from core.browser import WebBridgeBrowser
 
 def main():
     print("=== Testing J.A.R.V.I.S 10.0 WebBridge Browser ===")
+    failed = False
 
     browser = WebBridgeBrowser()
 
@@ -20,27 +21,35 @@ def main():
         print(f"Result {i+1}:")
         print(f"  Title: {res.get('title')}")
         print(f"  Link: {res.get('link')}")
-        print(f"  Snippet: {res.get('snippet')[:100]}...")
+        print(f"  Snippet: {(res.get('snippet') or '')[:100]}...")
 
     if len(search_res) > 0:
         print("[SUCCESS] WebBridge search completed successfully!")
     else:
         print("[FAILED] Search returned zero results.")
+        failed = True
 
     # 2. Test Boilerplate-free Scraping
     print("\n[Test 2] Scraping test URL (https://huggingface.co)...")
     scrape_res = browser.scrape_url("https://huggingface.co")
     
-    print(f"Scraped Title: {scrape_res.get('title')}")
-    print(f"Scraped Content length: {len(scrape_res.get('content'))} characters")
+    scraped_title = scrape_res.get('title') or ''
+    scraped_content = scrape_res.get('content') or ''
     
-    if len(scrape_res.get("content")) > 100:
+    print(f"Scraped Title: {scraped_title}")
+    print(f"Scraped Content length: {len(scraped_content)} characters")
+    
+    if len(scraped_content) > 100:
         print("[SUCCESS] Scraping completed and pulled clean text!")
         # Print a short snippet of content
-        snippet = scrape_res.get('content').replace('\n', ' ')[:200]
+        snippet = scraped_content.replace('\n', ' ')[:200]
         print(f"Content Snippet: {snippet}...")
     else:
         print("[FAILED] Scraping failed or pulled empty text.")
+        failed = True
+
+    if failed:
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

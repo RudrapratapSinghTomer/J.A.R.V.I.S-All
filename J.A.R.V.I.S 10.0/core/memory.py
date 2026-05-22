@@ -1,13 +1,13 @@
 import os
 import json
 import re
-import yaml
+from datetime import datetime
 from typing import List, Dict, Optional
+from core.config_loader import load_config
 
 # Load config
-_CONFIG_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "config.yaml"))
-with open(_CONFIG_PATH, "r") as f:
-    _CFG = yaml.safe_load(f)
+_CFG = load_config()
+
 
 CAP_CFG = _CFG.get("capabilities", {})
 REGISTRY_FILE = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", CAP_CFG.get("registry_file", "capabilities/registry.json")))
@@ -68,6 +68,17 @@ class SystemContextMemory:
             f"Sandbox Execution Status: {sandbox_status}"
         ]
 
+        # Probe Webcam and VLM hardware status dynamically
+        webcam_ok = False
+        try:
+            from core.vision import WebcamCapture
+            webcam_ok = WebcamCapture.probe_available()
+        except Exception:
+            pass
+
+        webcam_str = "Detected & Operational (Hardware is active. Fully available via native 'vision' step type using 'capture_and_analyze <prompt>')" if webcam_ok else "Not Detected (Hardware camera probe failed or OpenCV cv2 not available)"
+        vlm_str = "Active & Operational (NVIDIA Cloud meta/llama-3.2-90b-vision-instruct and local Ollama llama3.2-vision:11b)"
+
         if env_caps:
             context_parts.extend([
                 "\n--- SYSTEM CAPABILITIES ---",
@@ -77,6 +88,8 @@ class SystemContextMemory:
                 f"- Pip Available: {env_caps.get('pip_available')}",
                 f"- Git Available: {env_caps.get('git_available')}",
                 f"- NPM Available: {env_caps.get('npm_available')}",
+                f"- Webcam Hardware: {webcam_str}",
+                f"- Vision Language Model (VLM): {vlm_str}",
                 "\n--- SYSTEM LIMITATIONS & ERROR SAFETY ---"
             ])
             for limit in env_caps.get("limitations", []):
@@ -99,6 +112,78 @@ class SystemContextMemory:
                     f"- Description: {cap.get('description', '')} "
                     f"[Entrypoint: {cap.get('entrypoint', '')}]"
                 )
+
+        # Discover and integrate Antigravity pre-built awesome-skills
+        try:
+            from core.antigravity_loader import AntigravitySkillLoader
+            loader = AntigravitySkillLoader()
+            skills_dir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "external_skills", "antigravity"))
+            loader.skills_dir = skills_dir
+            skills = loader.discover_available_skills()
+            if skills:
+                context_parts.append("\n--- AVAILABLE PRE-BUILT AWESOME SKILLS (ANTIGRAVITY) ---")
+                context_parts.append("The following pre-compiled skills are available for immediate installation. "
+                                     "If the user requests a capability or a task that maps to these skills, recommend and execute installation "
+                                     "via 'propose antigravity <skill_name>' and 'approve antigravity <skill_name>'.")
+                # Show a curated sample of the first 25 skills to avoid prompt bloat
+                for skill_name, skill_data in list(skills.items())[:25]:
+                    metadata = skill_data.get("metadata", {})
+                    desc = metadata.get("description", "No description available.")
+                    if len(desc) > 90:
+                        desc = desc[:87] + "..."
+                    context_parts.append(f"- {skill_name}: {desc}")
+                if len(skills) > 25:
+                    context_parts.append(f"- ... and {len(skills) - 25} other pre-built awesome skills are ready to be integrated.")
+        except Exception as e:
+            context_parts.append(f"\n[Memory Warning] Failed to index Antigravity skills: {e}")
+
+        # Discover and list webcam images & screenshots from capabilities/screenshots directory
+        try:
+            is_linux = (os.name != 'nt')
+            clean_workspace = self.workspace_root
+            roots = [self.workspace_root]
+            if is_linux:
+                roots.append("/workspace")
+                roots.append("/workspace/J.A.R.V.I.S 10.0")
+                if re.match(r"^[a-zA-Z]:", clean_workspace):
+                    cleaned = re.sub(r"^[a-zA-Z]:", "", clean_workspace).replace("\\", "/")
+                    roots.append(cleaned)
+                    roots.append("/" + cleaned.lstrip("/"))
+
+            screenshots_dirs = []
+            for root in roots:
+                screenshots_dirs.append(os.path.normpath(os.path.join(root, "J.A.R.V.I.S 10.0", "capabilities", "screenshots")))
+                screenshots_dirs.append(os.path.normpath(os.path.join(root, "capabilities", "screenshots")))
+
+            found_images = []
+            for sdir in screenshots_dirs:
+                if os.path.exists(sdir) and os.path.isdir(sdir):
+                    # List all files in the directory
+                    files = os.listdir(sdir)
+                    for file in files:
+                        full_p = os.path.join(sdir, file)
+                        if os.path.isfile(full_p):
+                            _, ext = os.path.splitext(file)
+                            if ext.lower() in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"]:
+                                mtime = os.path.getmtime(full_p)
+                                found_images.append((file, mtime, full_p))
+            
+            # Deduplicate by absolute path, sort by modification time descending
+            unique_images = {}
+            for file, mtime, full_p in found_images:
+                unique_images[os.path.normcase(full_p)] = (file, mtime)
+            
+            sorted_images = sorted(unique_images.values(), key=lambda x: x[1], reverse=True)
+            
+            if sorted_images:
+                context_parts.append("\n--- CAPTURED WEBCAM IMAGES & SCREENSHOTS ---")
+                context_parts.append("You are aware of the following captured images/screenshots. "
+                                     "You can analyze or reference any of these using the native 'vision' step: "
+                                     "e.g., 'analyze_existing <image_name_or_path> <prompt>'")
+                for img_name, _ in sorted_images[:15]:
+                    context_parts.append(f"- {img_name}")
+        except Exception as e:
+            context_parts.append(f"\n[Memory Warning] Failed to index screenshots: {e}")
 
         if self.active_documents:
             context_parts.append("\n--- ACTIVE/OPEN SYSTEM FILES ---")
@@ -164,7 +249,7 @@ class AgentMemory:
             "query": query,
             "resolution": resolution,
             "code_snippets": code_snippets or [],
-            "timestamp": os.getenv("CURRENT_TIME", "")
+            "timestamp": datetime.now().isoformat()
         }
         self.ltm.append(record)
         self._save_ltm()

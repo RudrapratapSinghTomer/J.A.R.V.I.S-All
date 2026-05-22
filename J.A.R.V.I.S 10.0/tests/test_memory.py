@@ -9,6 +9,7 @@ from core.sandbox import DockerSandbox
 
 def main():
     print("=== Testing J.A.R.V.I.S 10.0 Dual-Layer Memory Engine ===")
+    failed = False
 
     workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -29,6 +30,7 @@ def main():
         print("[SUCCESS] System context compiled successfully!")
     else:
         print("[FAILED] System context missing file registrations.")
+        failed = True
 
     # 2. Test Agent Memory (STM & LTM)
     print("\n[Test 2] Initializing Agent Memory for 'Researcher'...")
@@ -50,6 +52,7 @@ def main():
         print("[SUCCESS] STM working perfectly!")
     else:
         print("[FAILED] STM turns count mismatch.")
+        failed = True
 
     # Test LTM Save & Query Search
     print("\nAdding execution records to LTM...")
@@ -74,6 +77,10 @@ def main():
         print("[SUCCESS] Semantic LTM retrieval working perfectly!")
     else:
         print("[FAILED] LTM search retrieval mismatch.")
+        failed = True
+
+    if failed:
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

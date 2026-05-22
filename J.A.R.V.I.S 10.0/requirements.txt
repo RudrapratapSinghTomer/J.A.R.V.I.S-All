@@ -11,3 +11,5 @@ aiohttp
 chromadb
 mss
 Pillow
+gitpython
+

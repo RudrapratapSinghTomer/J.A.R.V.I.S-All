@@ -14,7 +14,7 @@ def run_test_file(filename: str) -> bool:
     test_path = os.path.normpath(os.path.join(os.path.dirname(__file__), filename))
     
     start_time = time.time()
-    result = subprocess.run([sys.executable, test_path], capture_output=False)
+    result = subprocess.run([sys.executable, "-u", test_path], capture_output=False, timeout=120)
     elapsed = time.time() - start_time
     
     success = result.returncode == 0
@@ -32,8 +32,14 @@ def main():
     test_suites = [
         "test_sandbox.py",
         "test_memory.py",
+        "test_browser.py",
         "test_orchestrator.py",
-        "test_capability.py"
+        "test_capability.py",
+        "test_cognitive.py",
+        "test_antigravity.py",
+        "test_kimi_browser.py",
+        "test_audio.py",
+        "test_vision.py"
     ]
     
     passed_count = 0
