@@ -51,5 +51,59 @@ def main():
     
     print("[SUCCESS] CognitivePlanner successfully processed 13-stage reasoning loop, verified plan tree consistency, and logged details!")
 
+    # 3. Test robust plan tree validation
+    print("\n[Step 3] Testing Robust Plan Tree Validation...")
+    
+    # Plan with conceptual prerequisites (should PASS validation)
+    conceptual_plan = {
+        "steps": [
+            {
+                "id": 1,
+                "type": "terminal",
+                "description": "Install prerequisite library",
+                "command_or_action": "pip install something",
+                "dependencies": []
+            },
+            {
+                "id": 2,
+                "type": "terminal",
+                "description": "Execute script",
+                "command_or_action": "python script.py",
+                "dependencies": [1, "transformers library"] # 1 is valid step, "transformers library" is conceptual
+            }
+        ]
+    }
+    assert planner.validate_plan_tree(conceptual_plan) == True
+    print("  [PASSED] Plan with conceptual prerequisite successfully validated!")
+
+    # Plan with missing step dependency (should FAIL validation)
+    invalid_plan = {
+        "steps": [
+            {
+                "id": 1,
+                "type": "terminal",
+                "description": "Execute script",
+                "command_or_action": "python script.py",
+                "dependencies": [3] # Step 3 does not exist
+            }
+        ]
+    }
+    assert planner.validate_plan_tree(invalid_plan) == False
+    
+    # Plan with missing string step dependency (should FAIL validation)
+    invalid_plan_str = {
+        "steps": [
+            {
+                "id": 1,
+                "type": "terminal",
+                "description": "Execute script",
+                "command_or_action": "python script.py",
+                "dependencies": ["step3"] # Step 3 does not exist
+            }
+        ]
+    }
+    assert planner.validate_plan_tree(invalid_plan_str) == False
+    print("  [PASSED] Plan with missing step dependencies correctly rejected!")
+
 if __name__ == "__main__":
     main()

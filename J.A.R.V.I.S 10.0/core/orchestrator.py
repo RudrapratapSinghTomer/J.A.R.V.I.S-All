@@ -218,6 +218,16 @@ class DualLoopOrchestrator:
         normalized = re.sub(r"[^\w\s]", " ", normalized)  # Replace punctuation with spaces
         normalized = " ".join(normalized.split())          # Normalize whitespace
         
+        # Pre-screen: Force complex for action-oriented developer queries
+        developer_keywords = {
+            "update", "create", "write", "git", "commit", "push", "modify", 
+            "implement", "delete", "remove", "install", "build", "test", 
+            "rebuild", "fix", "debug", "compile", "deploy", "readme"
+        }
+        words = set(re.findall(r"\b\w+\b", normalized))
+        if any(kw in words for kw in developer_keywords):
+            return True
+
         # Heuristics for quick, instantaneous direct responses
         greetings = {
             "hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", 
@@ -427,8 +437,8 @@ class DualLoopOrchestrator:
         
         # Handle empty plans gracefully (BUG-8)
         if not steps:
-            print("[Orchestrator] Plan has no steps. Generating direct response...")
-            direct_res = self._generate_direct_response(user_state["text"], sys_context, user_state)
+            print("[Orchestrator] Plan has no steps. Generating honest direct failure response...")
+            direct_res = self._generate_direct_response(user_state["text"], sys_context, user_state, plan_failed=True)
             personalized_res = self._personalize_response(direct_res, user_state["text"], sys_context, user_state)
             cleaned_personalized_res = re.sub(r"^\[[a-zA-Z\s_]+\]\s*", "", personalized_res).strip()
             return f"[{detected_emotion}] {cleaned_personalized_res}"
@@ -819,7 +829,7 @@ class DualLoopOrchestrator:
         except Exception as e:
             return f"Task completed successfully. Logs: {json.dumps(step_results)}"
 
-    def _generate_direct_response(self, query: str, sys_context: str, user_state: dict = None) -> str:
+    def _generate_direct_response(self, query: str, sys_context: str, user_state: dict = None, plan_failed: bool = False) -> str:
         """Generates a direct conversational response when the plan has no executable steps."""
         if not self.llm_client:
             return (
@@ -837,14 +847,26 @@ class DualLoopOrchestrator:
                 "If the user is in a hurry or urgency is high, prioritize speed, be extremely brief, professional, and serious. Otherwise, be witty and conversational.\n"
             )
 
-        user_prompt = (
-            "The user has asked a question or made a request that does not require system commands.\n"
-            "Respond directly, concisely, and in full character as J.A.R.V.I.S.\n\n"
-            f"{user_state_info}\n"
-            f"SYSTEM CONTEXT:\n{sys_context}\n\n"
-            f"USER QUERY: {query}\n\n"
-            "Provide your response directly."
-        )
+        if plan_failed:
+            user_prompt = (
+                "The user has requested an action-oriented or developer task, but the planner was unable "
+                "to generate any valid execution steps. You must politely, transparently, and directly "
+                "explain that you were unable to plan or execute the required steps. Do NOT claim success "
+                "and do NOT hallucinate any file modifications, terminal runs, or database updates.\n\n"
+                f"{user_state_info}\n"
+                f"SYSTEM CONTEXT:\n{sys_context}\n\n"
+                f"USER QUERY: {query}\n\n"
+                "Provide your explanation directly."
+            )
+        else:
+            user_prompt = (
+                "The user has asked a question or made a request that does not require system commands.\n"
+                "Respond directly, concisely, and in full character as J.A.R.V.I.S.\n\n"
+                f"{user_state_info}\n"
+                f"SYSTEM CONTEXT:\n{sys_context}\n\n"
+                f"USER QUERY: {query}\n\n"
+                "Provide your response directly."
+            )
 
         try:
             completion = self.llm_client.chat.completions.create(

@@ -78,9 +78,16 @@ class CognitivePlanner:
             # Verify dependency IDs exist in the plan tree to prevent deadlocks
             deps = step.get("dependencies", [])
             for dep in deps:
-                if str(dep) not in registered_ids:
-                    print(f"[Planner Tree Validation Failed] Step {step.get('id')} has unresolved dependency {dep}")
-                    return False
+                dep_str = str(dep)
+                if dep_str not in registered_ids:
+                    # If it is numeric or starts with "step", it is intended to be a step ID but is missing.
+                    # Otherwise, it represents a conceptual requirement (e.g. "transformers library") and is ignored.
+                    is_step_reference = dep_str.isdigit() or dep_str.lower().startswith("step")
+                    if is_step_reference:
+                        print(f"[Planner Tree Validation Failed] Step {step.get('id')} has unresolved step dependency '{dep}'")
+                        return False
+                    else:
+                        print(f"[Planner Tree Validation Warning] Step {step.get('id')} lists conceptual prerequisite '{dep}' (ignored for scheduling)")
                     
         return True
 
