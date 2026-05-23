@@ -427,7 +427,7 @@ async def main():
             asyncio.run_coroutine_threadsafe(
                 execute_query_workflow(text), loop
             )
-        ears = Ears(on_transcription=on_transcribe)
+        ears = Ears(model_size="large-v3-turbo", on_transcription=on_transcribe)
         ears_started = ears.start()
         if ears_started:
             print("[JARVIS] Vocal systems and auditory sensors online, sir.")
@@ -456,7 +456,7 @@ async def main():
                             asyncio.run_coroutine_threadsafe(
                                 execute_query_workflow(text), loop
                             )
-                        ears = Ears(on_transcription=on_transcribe)
+                        ears = Ears(model_size="large-v3-turbo", on_transcription=on_transcribe)
                     
                     ears_started = ears.start()
                     if ears_started:

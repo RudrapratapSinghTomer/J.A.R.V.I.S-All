@@ -200,7 +200,7 @@ class AgentMemory:
     """
     Direct Agent Memory Wrapper.
     Contains sliding-window Short-Term Memory (STM) and local episodic
-    Long-Term Memory (LTM / LSTM) saving history to local json files.
+    Long-Term Memory (LTM / LSTM) saving history to local json files and ChromaDB.
     """
     def __init__(self, agent_name: str, max_stm_turns: int = 10):
         self.agent_name = agent_name
@@ -213,6 +213,21 @@ class AgentMemory:
         self.ltm_path = os.path.join(self.memory_dir, f"ltm_{self.agent_name.lower()}.json")
         
         self.ltm = self._load_ltm()
+        
+        # Initialize local persistent ChromaDB collection
+        self.collection = None
+        try:
+            import chromadb
+            chroma_dir = os.path.join(self.memory_dir, "chroma")
+            os.makedirs(chroma_dir, exist_ok=True)
+            self.chroma_client = chromadb.PersistentClient(path=chroma_dir)
+            collection_name = f"ltm_{self.agent_name.lower()}"
+            # Ensure name fits ChromaDB's naming guidelines (3-63 chars, alphanumeric/underscore/hyphen, no consecutive periods)
+            collection_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', collection_name)
+            self.collection = self.chroma_client.get_or_create_collection(name=collection_name)
+            print(f"[Memory] Successfully connected to ChromaDB collection: '{collection_name}'")
+        except Exception as e:
+            print(f"[Memory Warning] ChromaDB initialization failed: {e}. Falling back to JSON-only memory.")
 
     def _load_ltm(self) -> List[dict]:
         """Loads episodic records from disk."""
@@ -244,7 +259,7 @@ class AgentMemory:
         self.stm = []
 
     def add_to_ltm(self, query: str, resolution: str, code_snippets: Optional[List[str]] = None):
-        """Saves a successfully completed run/skill to the episodic LTM database."""
+        """Saves a successfully completed run/skill to the episodic LTM database and ChromaDB."""
         record = {
             "query": query,
             "resolution": resolution,
@@ -254,16 +269,120 @@ class AgentMemory:
         self.ltm.append(record)
         self._save_ltm()
 
+        # Ingest to ChromaDB
+        if self.collection:
+            try:
+                import time
+                doc_id = f"episode_{len(self.ltm)}_{int(time.time())}"
+                doc_text = f"Query: {query}\nResolution: {resolution}"
+                if code_snippets:
+                    doc_text += f"\nCode: {chr(10).join(code_snippets)}"
+                
+                self.collection.add(
+                    documents=[doc_text],
+                    metadatas=[{
+                        "type": "episode", 
+                        "query": query, 
+                        "resolution": resolution,
+                        "code_snippets": json.dumps(code_snippets or []),
+                        "timestamp": record["timestamp"]
+                    }],
+                    ids=[doc_id]
+                )
+            except Exception as e:
+                print(f"[Memory Warning] Failed to index episode into ChromaDB: {e}")
+
+    def add_semantic_fact(self, fact: str, fact_type: str = "preference"):
+        """Saves a semantic fact or user preference to the ChromaDB database."""
+        if self.collection:
+            try:
+                import time
+                doc_id = f"fact_{int(time.time())}"
+                self.collection.add(
+                    documents=[fact],
+                    metadatas=[{
+                        "type": fact_type,
+                        "timestamp": datetime.now().isoformat()
+                    }],
+                    ids=[doc_id]
+                )
+                print(f"[Memory] Fact ingested: '{fact}' ({fact_type})")
+            except Exception as e:
+                print(f"[Memory Warning] Failed to index fact into ChromaDB: {e}")
+
     def search_ltm(self, query: str, limit: int = 2) -> List[dict]:
         """
-        Retrieves top similar past successful episodes from LTM using token-based similarity.
-        Provides local vector-like retrieval without requiring a heavy external DB.
+        Retrieves top similar past successful episodes or facts from LTM.
+        Uses ChromaDB if active, otherwise falls back to token-based similarity.
         """
+        if not self.collection:
+            return self._search_ltm_fallback(query, limit)
+
+        try:
+            # Query ChromaDB collection
+            res = self.collection.query(
+                query_texts=[query],
+                n_results=limit
+            )
+            
+            results = []
+            if res and "ids" in res and res["ids"]:
+                matching_ids = res["ids"][0]
+                metas = res["metadatas"][0] if "metadatas" in res and res["metadatas"] else []
+                docs = res.get("documents", [[]])[0] if res.get("documents") else []
+                
+                for i in range(len(matching_ids)):
+                    doc_id = matching_ids[i]
+                    meta = metas[i] if i < len(metas) else {}
+                    doc_text = docs[i] if i < len(docs) else ""
+                    
+                    # Check if it's an episode or fact
+                    if meta.get("type") == "episode":
+                        # Match original record from self.ltm list
+                        orig_query = meta.get("query")
+                        match_record = None
+                        for record in self.ltm:
+                            if record.get("query") == orig_query:
+                                match_record = record
+                                break
+                        if match_record:
+                            results.append(match_record)
+                        else:
+                            # Reconstruct from metadata
+                            try:
+                                code_list = json.loads(meta.get("code_snippets", "[]"))
+                            except Exception:
+                                code_list = []
+                            results.append({
+                                "query": orig_query,
+                                "resolution": meta.get("resolution", ""),
+                                "code_snippets": code_list,
+                                "timestamp": meta.get("timestamp", "")
+                            })
+                    else:
+                        # It's a semantic fact, structure it to match expected query format
+                        results.append({
+                            "query": f"Semantic Fact: {meta.get('type', 'preference')}",
+                            "resolution": doc_text,
+                            "code_snippets": [],
+                            "timestamp": meta.get("timestamp", "")
+                        })
+
+            # If nothing returned, fallback to token similarity search
+            if not results:
+                return self._search_ltm_fallback(query, limit)
+                
+            return results
+        except Exception as e:
+            print(f"[Memory Warning] ChromaDB search failed: {e}. Falling back to token search...")
+            return self._search_ltm_fallback(query, limit)
+
+    def _search_ltm_fallback(self, query: str, limit: int = 2) -> List[dict]:
+        """Fallback token-based similarity search logic."""
         if not self.ltm:
             return []
 
-        # Use Overlap Coefficient: size of intersection divided by size of smaller set
-        # This is extremely resilient for partial/keyword queries in longer sentences
+        # Use Overlap Coefficient
         def calculate_similarity(s1: str, s2: str) -> float:
             tokens1 = set(re.findall(r"\w+", s1.lower()))
             tokens2 = set(re.findall(r"\w+", s2.lower()))
@@ -277,10 +396,7 @@ class AgentMemory:
             score = calculate_similarity(query, record["query"])
             scored_records.append((score, record))
 
-        # Sort by score descending
         scored_records.sort(key=lambda x: x[0], reverse=True)
-        
-        # Filter records with a minimal similarity threshold
         results = [rec for score, rec in scored_records if score >= 0.2]
         return results[:limit]
 

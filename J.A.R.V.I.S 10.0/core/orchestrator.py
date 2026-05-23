@@ -306,6 +306,7 @@ class DualLoopOrchestrator:
             "4. Integrates environment details and active/available skills organically if relevant.\n"
             "5. NEVER outputs generic or placeholder information. Every answer must be calculated, personalized, and rich in system context.\n"
             f"{user_state_instructions}\n"
+            f"SYSTEM CONTEXT:\n{sys_context}\n\n"
             f"USER QUERY: {query}\n"
             f"RAW RESPONSE: {raw_response}\n\n"
             "Output your refined response directly. Do not include any tags or conversational metadata."
@@ -392,12 +393,44 @@ class DualLoopOrchestrator:
         detected_emotion = user_state["emotion"]
         is_urgent = user_state["urgency"] == "high"
         
+        # Heuristic to detect if user wants Jarvis to remember a semantic fact or preference
+        cleaned_lower = query.lower().replace("jarvis,", "").replace("jarvis", "").strip()
+        prefixes = ["remember that", "remember my", "remember this fact", "store fact", "i want you to remember that"]
+        is_memory_store = False
+        fact_to_remember = None
+        
+        for pref in prefixes:
+            if cleaned_lower.startswith(pref):
+                idx = query.lower().find(pref)
+                fact_to_remember = query[idx + len(pref):].strip()
+                fact_to_remember = fact_to_remember.lstrip(": ,.!?").strip()
+                is_memory_store = True
+                break
+
+        if is_memory_store and fact_to_remember:
+            self.agent_memory.add_semantic_fact(fact_to_remember, "preference")
+            response = f"I have successfully committed that preference to my persistent memory core, sir. I will remember that: '{fact_to_remember}'."
+            return f"[{detected_emotion}] {response}"
+            
         if is_urgent:
             print("[Orchestrator] High urgency detected! Prioritizing speed and direct responsiveness.")
 
         # 1. Compile Global Context & LTM Memory
         sys_context = self.sys_memory.compile_global_context()
         past_episodes = self.agent_memory.search_ltm(user_state["text"])
+
+        # Inject retrieved semantically similar past memories and facts directly into the environment context
+        if past_episodes:
+            sys_context += "\n=== RETRIEVED LONG-TERM MEMORIES (SEMANTIC FACTS & EPISODES) ===\n"
+            for i, record in enumerate(past_episodes):
+                query_field = record.get("query", "Fact")
+                resolution_field = record.get("resolution", "")
+                sys_context += f"Memory {i+1}:\n"
+                sys_context += f"- Context/Query: {query_field}\n"
+                sys_context += f"- Detail/Resolution: {resolution_field}\n"
+                if record.get("code_snippets"):
+                    sys_context += f"- Code Snippets: {', '.join(record['code_snippets'])}\n"
+                sys_context += "\n"
 
         # Inject User State actively into system context
         user_state_str = f"User State: Emotion={detected_emotion.upper()}, Urgency={user_state['urgency'].upper()}"

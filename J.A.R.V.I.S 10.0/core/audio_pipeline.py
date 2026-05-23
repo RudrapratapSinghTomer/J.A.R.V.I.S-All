@@ -225,7 +225,7 @@ class Ears:
     """
     def __init__(
         self,
-        model_size: str = "base",
+        model_size: str = "large-v3-turbo",
         device: str = "cpu",
         compute_type: str = "int8",
         wake_word: str = "jarvis",
@@ -256,7 +256,19 @@ class Ears:
         if not self.model:
             print(f"[Ears] Initialising Whisper model '{self.model_size}' on {self.device}...")
             try:
-                self.model = WhisperModel(self.model_size, device=self.device, compute_type=self.compute_type)
+                download_root = None
+                workspace_root = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
+                legacy_whisper_path = os.path.join(workspace_root, "J.A.R.V.I.S", "models", "whisper")
+                if os.path.exists(legacy_whisper_path):
+                    download_root = legacy_whisper_path
+                    print(f"[Ears] Found pre-downloaded Whisper models in legacy folder: {download_root}")
+                
+                self.model = WhisperModel(
+                    self.model_size, 
+                    device=self.device, 
+                    compute_type=self.compute_type,
+                    download_root=download_root
+                )
                 print("[Ears] Whisper Model successfully loaded!")
             except Exception as e:
                 print(f"[Ears Error] Failed to load Whisper Model: {e}")
@@ -299,37 +311,88 @@ class Ears:
 
     def _process_audio(self):
         buffer = []
+        is_speaking = False
+        silence_blocks = 0
+        speech_blocks = 0
+        noise_floor = 0.005
+
         while not self._stop_event.is_set():
             try:
+                # Retrieve a 250ms chunk (blocksize=4000 at 16000Hz)
                 data = self.audio_queue.get(timeout=1.0)
-                buffer.append(data)
-
-                # Transcribe speech every 2 seconds
-                if len(buffer) >= 8:
-                    audio_data = np.concatenate(buffer).flatten()
-                    buffer = []  # Reset block buffer
-
-                    if self.model:
-                        segments, _ = self.model.transcribe(audio_data, beam_size=3)
-                        text = " ".join([s.text for s in segments]).strip().lower()
-
-                        if text:
-                            print(f"[Ears Heard] {text}")
-                            manual_active = time.time() < self._manual_listen_until
-                            
-                            if self.wake_word in text or manual_active:
-                                normalized = text
-                                if self.wake_word in text:
-                                    normalized = text.replace(self.wake_word, "", 1).strip()
-                                    normalized = normalized.lstrip(",.!? ").strip()
-                                    if not normalized:
-                                        # Heard just "Jarvis" — open listening window
-                                        print("[Ears] J.A.R.V.I.S wake word detected. Listening for command...")
-                                        self._manual_listen_until = time.time() + 6.0
-                                        continue
-
-                                if self.on_transcription:
-                                    self.on_transcription(normalized)
+                
+                # Calculate RMS energy of this chunk
+                rms = np.sqrt(np.mean(data**2))
+                
+                # Dynamically adapt noise floor if it's very quiet
+                if rms < noise_floor:
+                    noise_floor = 0.9 * noise_floor + 0.1 * rms
+                else:
+                    # Very slow decay to adapt to rising background noise
+                    noise_floor = 0.999 * noise_floor + 0.001 * rms
+                
+                # Speaking threshold is slightly above noise floor
+                # Ensure a minimum threshold to avoid triggering on absolute silence
+                threshold = max(noise_floor * 2.5, 0.015)
+                
+                if rms > threshold:
+                    # User is speaking
+                    if not is_speaking:
+                        print("[Ears] Speech detected, listening...")
+                        is_speaking = True
+                    buffer.append(data)
+                    silence_blocks = 0
+                    speech_blocks += 1
+                else:
+                    # Silence or background noise
+                    if is_speaking:
+                        buffer.append(data)
+                        silence_blocks += 1
+                        
+                        # If we detect silence for about 1.0 second (4 blocks of 250ms)
+                        # after some speech has occurred (at least 2 blocks / 500ms of speech)
+                        if silence_blocks >= 4:
+                            if speech_blocks >= 2:
+                                # Phrase is complete. Concatenate and transcribe
+                                audio_data = np.concatenate(buffer).flatten()
+                                print(f"[Ears] Phrase complete (length: {len(audio_data)/16000:.1f}s). Transcribing...")
+                                
+                                if self.model:
+                                    segments, _ = self.model.transcribe(audio_data, beam_size=3)
+                                    text = " ".join([s.text for s in segments]).strip().lower()
+                                    
+                                    if text:
+                                        print(f"[Ears Heard] {text}")
+                                        manual_active = time.time() < self._manual_listen_until
+                                        
+                                        if self.wake_word in text or manual_active:
+                                            normalized = text
+                                            if self.wake_word in text:
+                                                normalized = text.replace(self.wake_word, "", 1).strip()
+                                                normalized = normalized.lstrip(",.!? ").strip()
+                                                if not normalized:
+                                                    print("[Ears] J.A.R.V.I.S wake word detected. Listening for command...")
+                                                    self._manual_listen_until = time.time() + 8.0
+                                                    buffer = []
+                                                    is_speaking = False
+                                                    silence_blocks = 0
+                                                    speech_blocks = 0
+                                                    continue
+                                            
+                                            if self.on_transcription:
+                                                self.on_transcription(normalized)
+                                                
+                            # Reset speech buffer and state
+                            buffer = []
+                            is_speaking = False
+                            silence_blocks = 0
+                            speech_blocks = 0
+                    else:
+                        # Idle silence - keep a small sliding history of 2 blocks (500ms)
+                        # to capture the start of speech perfectly (prevent cutting off first word)
+                        buffer.append(data)
+                        if len(buffer) > 2:
+                            buffer.pop(0)
             except queue.Empty:
                 continue
             except Exception as e:

@@ -1,6 +1,13 @@
 # ==========================================
-# J.A.R.V.I.S Global Monorepo Gitignore
+# J.A.R.V.I.S Global Monorepo Dockerignore
 # ==========================================
+
+# --- Version Control ---
+.git
+.gitignore
+.dockerignore
+.code-review-graph/
+**/.code-review-graph/
 
 # --- Environments & Secrets ---
 .env
@@ -48,8 +55,6 @@ Thumbs.db
 **/.vscode/
 **/.idea/
 **/.DS_Store
-.code-review-graph/
-**/.code-review-graph/
 
 # --- Logs, Dumps & Temp Files ---
 *.log
@@ -89,9 +94,9 @@ J.A.R.V.I.S 10.0/capabilities/pdf/
 **/*.docker.log
 **/external_skills/antigravity/
 
-Dockerfile
-config.yaml
+# --- Docs & Images ---
 *.jpg
 10_phase_implementation_plan.md
 full_plan_extracted.md
 chroma.sqlite3
+README.md

@@ -12,4 +12,5 @@ chromadb
 mss
 Pillow
 gitpython
+pyttsx3
 
