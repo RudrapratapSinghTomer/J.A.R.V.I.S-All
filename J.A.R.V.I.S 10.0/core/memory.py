@@ -211,8 +211,10 @@ class AgentMemory:
         self.memory_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "memory"))
         os.makedirs(self.memory_dir, exist_ok=True)
         self.ltm_path = os.path.join(self.memory_dir, f"ltm_{self.agent_name.lower()}.json")
+        self.state_path = os.path.join(self.memory_dir, f"state_{self.agent_name.lower()}.json")
         
         self.ltm = self._load_ltm()
+        self.workflow_state = self._load_workflow_state()
         
         # Initialize local persistent ChromaDB collection
         self.collection = None
@@ -403,3 +405,48 @@ class AgentMemory:
     def get_stm_as_list(self) -> List[Dict[str, str]]:
         """Returns dialog history formatted for LLM client input."""
         return self.stm
+
+    def _load_workflow_state(self) -> dict:
+        """Loads persistent workflow state from disk."""
+        default_state = {
+            "last_query": None,
+            "last_action": None,
+            "last_error": None,
+            "active_topic": None
+        }
+        if not os.path.exists(self.state_path):
+            return default_state
+        try:
+            with open(self.state_path, "r", encoding="utf-8") as f:
+                state = json.load(f)
+                for k, v in default_state.items():
+                    if k not in state:
+                        state[k] = v
+                return state
+        except Exception as e:
+            print(f"[Memory Error] Failed to load workflow state for {self.agent_name}: {e}")
+            return default_state
+
+    def _save_workflow_state(self):
+        """Saves active workflow state to disk."""
+        try:
+            with open(self.state_path, "w", encoding="utf-8") as f:
+                json.dump(self.workflow_state, f, indent=2)
+        except Exception as e:
+            print(f"[Memory Error] Failed to save workflow state for {self.agent_name}: {e}")
+
+    def update_workflow_state(self, last_query: str = None, last_action: str = None, last_error: str = None, active_topic: str = None):
+        """Updates the episodic workflow/sequence tracking state."""
+        if last_query is not None:
+            self.workflow_state["last_query"] = last_query
+        if last_action is not None:
+            self.workflow_state["last_action"] = last_action
+        if last_error is not None:
+            self.workflow_state["last_error"] = last_error
+        if active_topic is not None:
+            self.workflow_state["active_topic"] = active_topic
+        self._save_workflow_state()
+
+    def get_workflow_state(self) -> dict:
+        """Retrieves the active workflow context."""
+        return self.workflow_state

@@ -11,6 +11,7 @@ from core.cli_engine import CLIEngine
 from core.memory import SystemContextMemory, AgentMemory
 from core.persona import get_persona  # Phase 1: persona & context injection
 from core.audio_pipeline import UserStateDetector  # Phase 2: urgency & emotion detection
+from core.intent_router import SemanticIntentRouter  # Phase 4: intent routing
 
 class DualLoopOrchestrator:
     """
@@ -39,6 +40,7 @@ class DualLoopOrchestrator:
         self.acquirer = acquirer
         self.plugin_manager = plugin_manager
         self.vision = vision
+        self.intent_router = SemanticIntentRouter(llm_client, model)
 
     def _resolve_image_path(self, image_path: str) -> Optional[str]:
         """Resolves an image path robustly and defensively on both Windows host and Linux sandboxes."""
@@ -393,31 +395,21 @@ class DualLoopOrchestrator:
         detected_emotion = user_state["emotion"]
         is_urgent = user_state["urgency"] == "high"
         
-        # Heuristic to detect if user wants Jarvis to remember a semantic fact or preference
-        cleaned_lower = query.lower().replace("jarvis,", "").replace("jarvis", "").strip()
-        prefixes = ["remember that", "remember my", "remember this fact", "store fact", "i want you to remember that"]
-        is_memory_store = False
-        fact_to_remember = None
+        # Phase 4: Semantic Intent Routing & Vague reference resolution
+        workflow_context = self.agent_memory.get_workflow_state()
+        routing = self.intent_router.route_intent(user_state["text"], workflow_context)
+        intent = routing["intent"]
+        resolved_query = routing["resolved_query"]
         
-        for pref in prefixes:
-            if cleaned_lower.startswith(pref):
-                idx = query.lower().find(pref)
-                fact_to_remember = query[idx + len(pref):].strip()
-                fact_to_remember = fact_to_remember.lstrip(": ,.!?").strip()
-                is_memory_store = True
-                break
-
-        if is_memory_store and fact_to_remember:
-            self.agent_memory.add_semantic_fact(fact_to_remember, "preference")
-            response = f"I have successfully committed that preference to my persistent memory core, sir. I will remember that: '{fact_to_remember}'."
-            return f"[{detected_emotion}] {response}"
-            
+        print(f"[Orchestrator Intent] Routed User Query to: '{intent}' (Resolved Query: '{resolved_query}')")
+        user_state["text"] = resolved_query
+        
         if is_urgent:
             print("[Orchestrator] High urgency detected! Prioritizing speed and direct responsiveness.")
 
         # 1. Compile Global Context & LTM Memory
         sys_context = self.sys_memory.compile_global_context()
-        past_episodes = self.agent_memory.search_ltm(user_state["text"])
+        past_episodes = self.agent_memory.search_ltm(resolved_query)
 
         # Inject retrieved semantically similar past memories and facts directly into the environment context
         if past_episodes:
@@ -436,44 +428,109 @@ class DualLoopOrchestrator:
         user_state_str = f"User State: Emotion={detected_emotion.upper()}, Urgency={user_state['urgency'].upper()}"
         sys_context += f"\n=== ACTIVE USER STATE ===\n{user_state_str}\n"
 
-        # Phase 2: Bypassing complex planning for simple tasks or high urgency
-        is_complex = self._is_query_complex(user_state["text"])
-        
-        if not is_complex or is_urgent:
-            print(f"[Orchestrator] Bypassing 13-stage cognitive planning tree (Reason: {'Urgent task' if is_urgent else 'Simple conversational query'})")
+        # Execute based on the routed intent
+        if intent == "MEMORY_STORE":
+            # Extract preference or fact
+            fact = resolved_query
+            cleaned_fact = fact.lower().replace("jarvis,", "").replace("jarvis", "").strip()
+            prefixes = ["remember that", "remember my", "remember this fact", "store fact", "i want you to remember that"]
+            for pref in prefixes:
+                if cleaned_fact.startswith(pref):
+                    idx = fact.lower().find(pref)
+                    fact = fact[idx + len(pref):].strip()
+                    fact = fact.lstrip(": ,.!?").strip()
+                    break
+            self.agent_memory.add_semantic_fact(fact, "preference")
             
-            # Execute direct simple action if matching
-            direct_action_res = None
-            if not is_complex:
-                direct_action_res = await self._execute_direct_action(user_state["text"])
+            # Update workflow state
+            self.agent_memory.update_workflow_state(
+                last_query=resolved_query,
+                last_action="MEMORY_STORE",
+                last_error=None,
+                active_topic="User Preference/Fact Store"
+            )
             
-            if direct_action_res:
-                direct_res = direct_action_res
-            else:
-                direct_res = self._generate_direct_response(user_state["text"], sys_context, user_state)
-                
-            personalized_res = self._personalize_response(direct_res, user_state["text"], sys_context, user_state)
-            
-            # Clean duplicate bracketed tags from the final string
-            cleaned_personalized_res = re.sub(r"^\[[a-zA-Z\s_]+\]\s*", "", personalized_res).strip()
-            vocal_emotion = "serious" if is_urgent else detected_emotion
-            final_res = f"[{vocal_emotion}] {cleaned_personalized_res}"
-            return final_res
+            response = f"I have successfully committed that preference to my persistent memory core, sir. I will remember that: '{fact}'."
+            return f"[{detected_emotion}] {response}"
 
-        # 2. Loop 1: Plan & Validate Plan
-        print("[Orchestrator] Generating plan...")
-        plan = self.planner.generate_plan(user_state["text"], sys_context, past_episodes)
+        elif intent == "DIRECT_ACTION":
+            print("[Orchestrator] Executing direct action bypass...")
+            direct_action_res = await self._execute_direct_action(resolved_query)
+            if not direct_action_res:
+                direct_action_res = self._generate_direct_response(resolved_query, sys_context, user_state)
+            
+            personalized_res = self._personalize_response(direct_action_res, resolved_query, sys_context, user_state)
+            cleaned_personalized_res = re.sub(r"^\[[a-zA-Z\s_]+\]\s*", "", personalized_res).strip()
+            
+            # Update workflow state
+            self.agent_memory.update_workflow_state(
+                last_query=resolved_query,
+                last_action="DIRECT_ACTION",
+                last_error=None,
+                active_topic="Direct System/Media Action"
+            )
+            
+            return f"[{detected_emotion}] {cleaned_personalized_res}"
+
+        elif intent == "WEB_SEARCH":
+            print("[Orchestrator] Executing direct web search bypass...")
+            if self.browser:
+                loop = asyncio.get_running_loop()
+                res = await loop.run_in_executor(None, self.browser.smart_navigate, resolved_query)
+                if res.get("success"):
+                    search_res = f"I have searched the web for your query and initiated navigation, sir."
+                else:
+                    search_res = f"I attempted to search the web for '{resolved_query}', sir, but encountered an error: {res.get('error')}"
+            else:
+                search_res = "I am unable to perform a web search at the moment, sir, as the WebBridge browser module is currently offline."
+                
+            personalized_res = self._personalize_response(search_res, resolved_query, sys_context, user_state)
+            cleaned_personalized_res = re.sub(r"^\[[a-zA-Z\s_]+\]\s*", "", personalized_res).strip()
+            
+            # Update workflow state
+            self.agent_memory.update_workflow_state(
+                last_query=resolved_query,
+                last_action="WEB_SEARCH",
+                last_error=None,
+                active_topic="Web Inquiry"
+            )
+            
+            return f"[{detected_emotion}] {cleaned_personalized_res}"
+
+        elif intent == "GENERAL_QUERY":
+            print("[Orchestrator] Executing direct conversational bypass...")
+            direct_res = self._generate_direct_response(resolved_query, sys_context, user_state)
+            personalized_res = self._personalize_response(direct_res, resolved_query, sys_context, user_state)
+            cleaned_personalized_res = re.sub(r"^\[[a-zA-Z\s_]+\]\s*", "", personalized_res).strip()
+            
+            # Update workflow state
+            self.agent_memory.update_workflow_state(
+                last_query=resolved_query,
+                last_action="GENERAL_QUERY",
+                last_error=None,
+                active_topic="Conversation"
+            )
+            
+            return f"[{detected_emotion}] {cleaned_personalized_res}"
+
+        # Standard COMPLEX_PLAN intent flow:
+        print("[Orchestrator] Generating plan for complex task...")
+        plan = self.planner.generate_plan(resolved_query, sys_context, past_episodes)
         print(f"[Orchestrator] Plan Generated: '{plan.get('goal', 'No Goal')}'")
         
-        # Log plan steps
         steps = plan.get("steps", [])
-        
-        # Handle empty plans gracefully (BUG-8)
         if not steps:
             print("[Orchestrator] Plan has no steps. Generating honest direct failure response...")
-            direct_res = self._generate_direct_response(user_state["text"], sys_context, user_state, plan_failed=True)
-            personalized_res = self._personalize_response(direct_res, user_state["text"], sys_context, user_state)
+            direct_res = self._generate_direct_response(resolved_query, sys_context, user_state, plan_failed=True)
+            personalized_res = self._personalize_response(direct_res, resolved_query, sys_context, user_state)
             cleaned_personalized_res = re.sub(r"^\[[a-zA-Z\s_]+\]\s*", "", personalized_res).strip()
+            
+            self.agent_memory.update_workflow_state(
+                last_query=resolved_query,
+                last_action="COMPLEX_PLAN_FAILED",
+                last_error="Planning phase failed to produce executable steps.",
+                active_topic="System Operation Failure"
+            )
             return f"[{detected_emotion}] {cleaned_personalized_res}"
         
         for step in steps:
@@ -523,9 +580,14 @@ class DualLoopOrchestrator:
                         del uncompleted_steps[step_id]
                     else:
                         print(f"[Orchestrator Critical] Step {step_id} failed verification: {result.get('error', 'Execution error')}")
-                        # If a critical step fails, we attempt self-correction / replanning
-                        # For simple base codebase, we exit the orchestration with failure
-                        return f"Orchestration loop aborted due to failure at Step {step_id}: {result.get('error')}"
+                        error_msg = result.get('error', 'Execution error')
+                        self.agent_memory.update_workflow_state(
+                            last_query=resolved_query,
+                            last_action=f"STEP_{step_id}_FAILED",
+                            last_error=error_msg,
+                            active_topic="System Execution Error"
+                        )
+                        return f"Orchestration loop aborted due to failure at Step {step_id}: {error_msg}"
 
             # Small sleep to prevent busy-waiting loop
             await asyncio.sleep(0.1)
@@ -542,6 +604,13 @@ class DualLoopOrchestrator:
         self.agent_memory.add_to_ltm(
             query=query,
             resolution=vocal_emotion
+        )
+
+        self.agent_memory.update_workflow_state(
+            last_query=resolved_query,
+            last_action="COMPLEX_PLAN_SUCCESS",
+            last_error=None,
+            active_topic="System Execution Success"
         )
 
         return vocal_emotion

@@ -37,6 +37,7 @@ def main():
         "test_capability.py",
         "test_cognitive.py",
         "test_antigravity.py",
+        "test_intent_router.py",
         "test_kimi_browser.py",
         "test_audio.py",
         "test_vision.py"

@@ -95,3 +95,4 @@ config.yaml
 10_phase_implementation_plan.md
 full_plan_extracted.md
 chroma.sqlite3
+state_coreorchestrator.json

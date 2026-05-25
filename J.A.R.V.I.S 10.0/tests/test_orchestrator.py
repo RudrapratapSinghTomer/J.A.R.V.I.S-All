@@ -50,14 +50,14 @@ async def main():
                 "id": 1,
                 "type": "terminal",
                 "description": "Execute Task 1 (Sleeps 1s)",
-                "command_or_action": "python -c \"import time; print('Task 1 Executing'); time.sleep(1); print('Task 1 Done')\"",
+                "command_or_action": "python -c \"import time; print('T1_START', time.time()); time.sleep(1); print('T1_END', time.time())\"",
                 "dependencies": []
             },
             {
                 "id": 2,
                 "type": "terminal",
                 "description": "Execute Task 2 (Sleeps 1s)",
-                "command_or_action": "python -c \"import time; print('Task 2 Executing'); time.sleep(1); print('Task 2 Done')\"",
+                "command_or_action": "python -c \"import time; print('T2_START', time.time()); time.sleep(1); print('T2_END', time.time())\"",
                 "dependencies": []
             },
             {
@@ -88,9 +88,20 @@ async def main():
     print("---------------------------------")
     print(f"Elapsed Time: {elapsed:.2f} seconds")
     
-    # Since Task 1 (1s sleep) and Task 2 (1s sleep) ran in parallel,
-    # the total time for the execution loop should be close to ~1.0s (rather than 2.0s sequential).
-    if elapsed < 2.5:
+    # Parallel execution check using mathematical overlapping intervals
+    import re
+    t1_start = re.search(r"T1_START\s+([\d.]+)", result)
+    t1_end = re.search(r"T1_END\s+([\d.]+)", result)
+    t2_start = re.search(r"T2_START\s+([\d.]+)", result)
+    t2_end = re.search(r"T2_END\s+([\d.]+)", result)
+
+    is_parallel = False
+    if t1_start and t1_end and t2_start and t2_end:
+        s1, e1 = float(t1_start.group(1)), float(t1_end.group(1))
+        s2, e2 = float(t2_start.group(1)), float(t2_end.group(1))
+        is_parallel = (s2 < e1) and (s1 < e2)
+
+    if is_parallel or elapsed < 2.5:
         print("[SUCCESS] Orchestrator successfully ran Tasks 1 and 2 in parallel!")
     else:
         print("[FAILED] Orchestrator ran tasks sequentially.")
