@@ -456,21 +456,22 @@ class DualLoopOrchestrator:
         elif intent == "DIRECT_ACTION":
             print("[Orchestrator] Executing direct action bypass...")
             direct_action_res = await self._execute_direct_action(resolved_query)
-            if not direct_action_res:
-                direct_action_res = self._generate_direct_response(resolved_query, sys_context, user_state)
-            
-            personalized_res = self._personalize_response(direct_action_res, resolved_query, sys_context, user_state)
-            cleaned_personalized_res = re.sub(r"^\[[a-zA-Z\s_]+\]\s*", "", personalized_res).strip()
-            
-            # Update workflow state
-            self.agent_memory.update_workflow_state(
-                last_query=resolved_query,
-                last_action="DIRECT_ACTION",
-                last_error=None,
-                active_topic="Direct System/Media Action"
-            )
-            
-            return f"[{detected_emotion}] {cleaned_personalized_res}"
+            if direct_action_res:
+                personalized_res = self._personalize_response(direct_action_res, resolved_query, sys_context, user_state)
+                cleaned_personalized_res = re.sub(r"^\[[a-zA-Z\s_]+\]\s*", "", personalized_res).strip()
+                
+                # Update workflow state
+                self.agent_memory.update_workflow_state(
+                    last_query=resolved_query,
+                    last_action="DIRECT_ACTION",
+                    last_error=None,
+                    active_topic="Direct System/Media Action"
+                )
+                
+                return f"[{detected_emotion}] {cleaned_personalized_res}"
+            else:
+                print("[Orchestrator Warning] Direct action bypass not supported for this query. Falling back to planning flow...")
+                intent = "COMPLEX_PLAN"
 
         elif intent == "WEB_SEARCH":
             print("[Orchestrator] Executing direct web search bypass...")
@@ -916,9 +917,16 @@ class DualLoopOrchestrator:
         user_prompt = (
             "Summarize the completed execution of the task plan into a cohesive, concise, "
             "and professional resolution statement for your user. Speak in character as JARVIS.\n\n"
+            "CRITICAL EXTREME GROUNDING RULE:\n"
+            "You MUST ground your summary strictly and honestly in the exact concrete outputs, stdout, "
+            "and errors in the EXECUTION RESULTS. If the results indicate that a directory was empty, "
+            "no files were found, or a step had empty output/performed no modifications, you MUST state "
+            "this transparently and honestly. NEVER claim success in performing file processing, text updates, "
+            "or memory injections if the logs show no files were actually read or processed. Avoid any false "
+            "claims of success or hallucinations.\n\n"
             f"USER QUERY: {query}\n\n"
             f"EXECUTION RESULTS:\n{json.dumps(step_results, indent=2)}\n\n"
-            "Provide the final response directly. Ground your summary in the exact work completed."
+            "Provide the final response directly."
         )
 
         try:

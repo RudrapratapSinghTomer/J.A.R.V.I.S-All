@@ -8,6 +8,9 @@
 .dockerignore
 .code-review-graph/
 **/.code-review-graph/
+.claude/
+.claude-flow/
+.jarvis/
 
 # --- Environments & Secrets ---
 .env
@@ -24,6 +27,14 @@ ENV/
 **/.venv/
 **/venv/
 **/env/
+
+# Credentials and secrets
+*credentials.py
+*credentials.json
+*credentials.ini
+*credentials.yaml
+*credentials.yml
+anthropic_credentials.py
 
 # --- Python Compiled & Caching ---
 __pycache__/
@@ -77,9 +88,14 @@ J.A.R.V.I.S 8.0/data/
 # J.A.R.V.I.S 10.0 Dynamic Episodic Data & Model Weights
 J.A.R.V.I.S 10.0/memory/ltm_*.json
 J.A.R.V.I.S 10.0/memory/chroma/
+J.A.R.V.I.S 10.0/memory/state_*.json
+state_*.json
+**/state_*.json
 J.A.R.V.I.S 10.0/capabilities/plugins/__pycache__/
 J.A.R.V.I.S 10.0/capabilities/screenshots/
 J.A.R.V.I.S 10.0/capabilities/pdf/
+J.A.R.V.I.S 10.0/capabilities/plans/
+**/capabilities/plans/
 
 # --- Local YAML Config & Compose Overrides ---
 *.local.yaml
